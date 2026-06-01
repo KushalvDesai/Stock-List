@@ -23,6 +23,7 @@ interface StockEntry {
   netWt: number | null;
   dop: string | null;
   user: string | null;
+  auction: boolean | null;
 }
 
 export default function ViewStockPage() {
@@ -94,6 +95,7 @@ export default function ViewStockPage() {
       totalBags: row.totalBags,
       bagWt: row.bagWt,
       netWt: row.netWt,
+      auction: row.auction,
     });
   };
 
@@ -117,7 +119,7 @@ export default function ViewStockPage() {
     }
   };
 
-  const handleEditChange = (field: keyof StockEntry, value: string) => {
+  const handleEditChange = (field: keyof StockEntry, value: any) => {
     setEditFormData(prev => {
       const updated = { ...prev, [field]: value };
       if (field === 'totalBags' || field === 'bagWt') {
@@ -211,6 +213,7 @@ export default function ViewStockPage() {
                   <th className="px-4 py-3 text-right">BAG WT (kg)</th>
                   <th className="px-4 py-3 text-right">NET WT (kg)</th>
                   <th className="px-4 py-3 text-center">DOP</th>
+                  <th className="px-4 py-3 text-center">AUCTION</th>
                   <th className="px-4 py-3 text-center">USER</th>
                   <th className="px-4 py-3 text-center w-24">ACTIONS</th>
                 </tr>
@@ -218,13 +221,13 @@ export default function ViewStockPage() {
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-12 text-center text-gray-500 font-medium">
+                    <td colSpan={11} className="px-4 py-12 text-center text-gray-500 font-medium">
                       Loading stock database...
                     </td>
                   </tr>
                 ) : filteredStock.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-12 text-center text-gray-500 font-medium">
+                    <td colSpan={11} className="px-4 py-12 text-center text-gray-500 font-medium">
                       No stock entries found matching your criteria.
                     </td>
                   </tr>
@@ -309,6 +312,22 @@ export default function ViewStockPage() {
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-600">
                             {formatDate(row.dop)}
+                          </td>
+                          <td className="px-4 py-2.5 text-center">
+                            {isEditing ? (
+                              <input 
+                                type="checkbox" 
+                                checked={editFormData.auction || false} 
+                                onChange={(e) => handleEditChange('auction', e.target.checked)}
+                                className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500" 
+                              />
+                            ) : (
+                              row.auction ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">Yes</span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">No</span>
+                              )
+                            )}
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">

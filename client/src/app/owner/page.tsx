@@ -8,6 +8,7 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid
 } from "recharts";
+import { useAuthStore } from "@/store/authStore";
 
 interface StockEntry {
   id: string;
@@ -20,6 +21,7 @@ interface StockEntry {
   dop: string | null;
   soldRate: number | null;
   soldDate: string | null;
+  auction: boolean | null;
 }
 
 interface EditRequest {
@@ -116,6 +118,16 @@ export default function OwnerDashboard() {
     return Object.values(monthsMap).sort((a, b) => a.month.localeCompare(b.month));
   }, [stockData]);
 
+  const sortedEditRequests = useMemo(() => {
+    return [...editRequests].sort((a, b) => {
+      const aHasAuction = a.newData && a.newData.auction !== undefined && String(a.newData.auction) !== String(a.stock.auction || false);
+      const bHasAuction = b.newData && b.newData.auction !== undefined && String(b.newData.auction) !== String(b.stock.auction || false);
+      if (aHasAuction && !bHasAuction) return -1;
+      if (!aHasAuction && bHasAuction) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [editRequests]);
+
   const totalProduction = lineData.reduce((acc, val) => acc + val.production, 0);
 
   if (isLoading) {
@@ -129,7 +141,7 @@ export default function OwnerDashboard() {
         <h1 className="text-xl font-bold text-gray-800 tracking-tight">Owner Dashboard</h1>
         <button 
           onClick={() => {
-            localStorage.removeItem('token');
+            useAuthStore.getState().logout();
             window.location.href = '/login';
           }}
           className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
@@ -263,8 +275,10 @@ export default function OwnerDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  editRequests.map((req) => (
-                    <tr key={req.id} className="hover:bg-gray-50 transition-colors">
+                  sortedEditRequests.map((req) => {
+                    const isHighPriority = req.newData && req.newData.auction !== undefined && String(req.newData.auction) !== String(req.stock.auction || false);
+                    return (
+                    <tr key={req.id} className={`hover:bg-gray-50 transition-colors ${isHighPriority ? 'bg-red-50/50' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {new Date(req.createdAt).toLocaleDateString('en-GB')}
                       </td>
@@ -273,6 +287,11 @@ export default function OwnerDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         {req.stock.inv || 'N/A'} - {req.stock.invNo || 'N/A'} (Grade: {req.stock.grade})
+                        {isHighPriority && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 border border-red-200 uppercase tracking-wider">High Priority</span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
@@ -309,7 +328,8 @@ export default function OwnerDashboard() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
