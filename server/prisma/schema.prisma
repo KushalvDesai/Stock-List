@@ -41,6 +41,17 @@ enum Grade {
   BOPL
 }
 
+enum AuctionBroker {
+  J_THOMAS
+  CARRITT_MORAN
+  PARAMOUNT
+  CONTEMPORARY
+  ATB
+  PTM
+  ASSAM_TEA_BROKERS
+  OTHER
+}
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -69,6 +80,9 @@ model Stock {
   purchaseSample     Boolean?
   purchaseSampleDate DateTime?
   auction            Boolean?  @default(false)
+  auctionNo          String?
+  auctionDate        DateTime?
+  auctionBroker      AuctionBroker?
   timestamp          DateTime  @default(now()) @updatedAt
   user               String?
   createdAt          DateTime  @default(now())
@@ -106,6 +120,9 @@ model StockMaster {
   purchaseSample     Boolean?
   purchaseSampleDate DateTime?
   auction            Boolean?  @default(false)
+  auctionNo          String?
+  auctionDate        DateTime?
+  auctionBroker      AuctionBroker?
   timestamp          DateTime  @default(now()) @updatedAt
   user               String?
   createdAt          DateTime  @default(now())
