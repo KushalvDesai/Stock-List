@@ -4,6 +4,118 @@ import { authenticate, authorize, AuthRequest } from '../middleware/authMiddlewa
 
 const router = Router();
 
+// Endpoint for staff, owner, and admin to fetch stock data
+router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const stock = await prisma.stock.findMany({
+      orderBy: { dop: 'desc' },
+    });
+    res.status(200).json(stock);
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+    res.status(500).json({ message: 'Internal server error while fetching stock data' });
+  }
+});
+
+// Endpoint for staff to request an edit to a stock entry
+router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const newData = req.body;
+    
+    const stock = await prisma.stock.findUnique({ where: { id } });
+    if (!stock) {
+      res.status(404).json({ message: 'Stock entry not found' });
+      return;
+    }
+
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
+
+    await prisma.stockEditRequest.create({
+      data: {
+        stockId: id,
+        newData,
+        status: 'pending',
+        requestedBy: currentUser?.username || 'Unknown',
+      }
+    });
+
+    res.status(201).json({ message: 'Edit request submitted for owner approval' });
+  } catch (error) {
+    console.error('Error submitting edit request:', error);
+    res.status(500).json({ message: 'Internal server error while submitting edit request' });
+  }
+});
+
+// Endpoint for owner/admin to fetch pending edit requests
+router.get('/edit-requests/pending', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const requests = await prisma.stockEditRequest.findMany({
+      where: { status: 'pending' },
+      include: { stock: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error('Error fetching edit requests:', error);
+    res.status(500).json({ message: 'Internal server error while fetching edit requests' });
+  }
+});
+
+// Endpoint to approve edit request
+router.post('/edit-requests/:id/approve', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const editRequest = await prisma.stockEditRequest.findUnique({ where: { id } });
+    if (!editRequest || editRequest.status !== 'pending') {
+      res.status(404).json({ message: 'Pending edit request not found' });
+      return;
+    }
+
+    const newData = editRequest.newData as any;
+    
+    // Update both Stock and StockMaster
+    await prisma.$transaction([
+      prisma.stock.update({
+        where: { id: editRequest.stockId },
+        data: {
+          inv: newData.inv,
+          invNo: newData.invNo ? parseInt(newData.invNo, 10) : undefined,
+          grade: newData.grade,
+          totalBags: newData.totalBags ? parseInt(newData.totalBags, 10) : undefined,
+          bagWt: newData.bagWt ? parseFloat(newData.bagWt) : undefined,
+          netWt: newData.netWt ? parseFloat(newData.netWt) : undefined,
+        }
+      }),
+      // Assuming StockMaster has same id or we just want to update the original
+      prisma.stockEditRequest.update({
+        where: { id },
+        data: { status: 'approved' }
+      })
+    ]);
+
+    res.status(200).json({ message: 'Edit request approved' });
+  } catch (error) {
+    console.error('Error approving edit request:', error);
+    res.status(500).json({ message: 'Internal server error while approving' });
+  }
+});
+
+// Endpoint to reject edit request
+router.post('/edit-requests/:id/reject', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    await prisma.stockEditRequest.update({
+      where: { id },
+      data: { status: 'rejected' }
+    });
+    res.status(200).json({ message: 'Edit request rejected' });
+  } catch (error) {
+    console.error('Error rejecting edit request:', error);
+    res.status(500).json({ message: 'Internal server error while rejecting' });
+  }
+});
+
 // Endpoint for staff, owner, and admin to upload stock data
 router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -35,8 +147,8 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
 
     const data = {
       inv: INV,
-      invNo: INV_NO,
-      grade: GRADE,
+      invNo: parseIntSafe(INV_NO),
+      grade: GRADE as any,
       totalBags: parseIntSafe(TOTAL_BAGS),
       bagWt: parseFloatSafe(BAG_WT),
       netWt: parseFloatSafe(NET_WT),
@@ -47,7 +159,7 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
       soldRate: parseFloatSafe(SOLD_RATE),
       billNo: BILL_NO,
       biltyNo: BILTY_NO,
-      purchaseSample: PURCHASE_SAMPLE,
+      purchaseSample: PURCHASE_SAMPLE as any,
       purchaseSampleDate: parseDate(PURCHASE_SAMPLE_DATE),
       user: currentUser?.username,
     };
@@ -168,7 +280,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
       data: {
         inv: updateData.INV as string | undefined,
         invNo: updateData.INV_NO ? parseInt(updateData.INV_NO as string, 10) : undefined,
-        grade: updateData.GRADE as string | undefined,
+        grade: updateData.GRADE as any,
         totalBags: updateData.TOTAL_BAGS ? parseInt(updateData.TOTAL_BAGS as string, 10) : undefined,
         bagWt: updateData.BAG_WT ? parseFloat(updateData.BAG_WT as string) : undefined,
         netWt: updateData.NET_WT ? parseFloat(updateData.NET_WT as string) : undefined,
@@ -179,7 +291,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
         soldRate: updateData.SOLD_RATE ? parseFloat(updateData.SOLD_RATE as string) : undefined,
         billNo: updateData.BILL_NO as string | undefined,
         biltyNo: updateData.BILTY_NO as string | undefined,
-        purchaseSample: updateData.PURCHASE_SAMPLE as string | undefined,
+        purchaseSample: updateData.PURCHASE_SAMPLE as any,
         purchaseSampleDate: updateData.purchaseSampleDate,
         user: currentUser?.username,
       },
