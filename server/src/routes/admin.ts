@@ -1,4 +1,6 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import { prisma } from '../prisma';
 import { authenticate, authorize, AuthRequest } from '../middleware/authMiddleware';
 import { authLimiter, bannedIps } from './auth';
 
@@ -30,6 +32,43 @@ router.post('/unban', authenticate, authorize(['admin']), (req: AuthRequest, res
   bannedIps.delete(ip);
   
   res.status(200).json({ message: `IP ${ip} has been unbanned` });
+});
+
+router.get('/users', authenticate, authorize(['admin']), async (req: AuthRequest, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, username: true, role: true, createdAt: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.post('/users/:id/password', authenticate, authorize(['admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 5) {
+      res.status(400).json({ message: 'Password must be at least 5 characters long' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 export default router;

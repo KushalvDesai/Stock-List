@@ -200,7 +200,7 @@ const ToastContainer = () => {
                 "absolute right-0 bottom-0 shadow-menu rounded-xl leading-[21px] p-4 h-fit",
                 {
                   message: "bg-geist-background text-gray-1000",
-                  success: "bg-blue-700 text-contrast-fg",
+                  success: "bg-green-600 text-white",
                   warning: "bg-amber-800 text-gray-1000 dark:text-gray-100",
                   error: "bg-red-800 text-contrast-fg"
                 }[toast.type],
