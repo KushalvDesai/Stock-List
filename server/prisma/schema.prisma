@@ -17,6 +17,30 @@ enum Role {
   admin
 }
 
+enum Grade {
+  BPS
+  BOP
+  BOPSM
+  BP
+  BPSM
+  PF
+  PD
+  DUST
+  CD
+  BPS1
+  BOPL1
+  BOP1
+  BOPSM1
+  BP1
+  BPSM1
+  PF1
+  PD1
+  DUST1
+  CD1
+  OF
+  BOPL
+}
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -30,7 +54,7 @@ model Stock {
   id                 String    @id @default(uuid())
   inv                String?
   invNo              Int?
-  grade              String?
+  grade              Grade?
   totalBags          Int?
   bagWt              Float?
   netWt              Float?
@@ -39,21 +63,35 @@ model Stock {
   buyer              String?
   soldDate           DateTime?
   soldRate           Float?
+  soldInvNo          Int?
   billNo             String?
   biltyNo            String?
-  purchaseSample     String?
+  purchaseSample     Boolean?
   purchaseSampleDate DateTime?
+  auction            Boolean?  @default(false)
   timestamp          DateTime  @default(now()) @updatedAt
   user               String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  editRequests       StockEditRequest[]
+}
+
+model StockEditRequest {
+  id          String   @id @default(uuid())
+  stockId     String
+  stock       Stock    @relation(fields: [stockId], references: [id])
+  newData     Json     // Stores the proposed fields to change
+  status      String   @default("pending") // pending, approved, rejected
+  requestedBy String   // username of the staff member
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model StockMaster {
   id                 String    @id @default(uuid())
   inv                String?
   invNo              Int?
-  grade              String?
+  grade              Grade?
   totalBags          Int?
   bagWt              Float?
   netWt              Float?
@@ -62,10 +100,12 @@ model StockMaster {
   buyer              String?
   soldDate           DateTime?
   soldRate           Float?
+  soldInvNo          Int?
   billNo             String?
   biltyNo            String?
-  purchaseSample     String?
+  purchaseSample     Boolean?
   purchaseSampleDate DateTime?
+  auction            Boolean?  @default(false)
   timestamp          DateTime  @default(now()) @updatedAt
   user               String?
   createdAt          DateTime  @default(now())
