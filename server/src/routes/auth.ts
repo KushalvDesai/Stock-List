@@ -14,10 +14,29 @@ export const bannedIps = new Map<string, Date>();
 export const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,
-  handler: (req, res, next, options) => {
+  handler: async (req, res, next, options) => {
     const ip = ipKeyGenerator(req.ip || 'unknown');
-    // Only set if not already tracked or if we want to reset the ban timer (usually rate limiter extends it)
-    bannedIps.set(ip, new Date(Date.now() + 60 * 60 * 1000));
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    // Only create notification if it's a new ban
+    const isNewBan = !bannedIps.has(ip);
+    bannedIps.set(ip, expiresAt);
+
+    if (isNewBan) {
+      try {
+        await prisma.notification.create({
+          data: {
+            title: 'IP Rate Limited',
+            message: `Too many login attempts from IP: ${ip}`,
+            role: 'admin',
+            metadata: { ip, expiresAt: expiresAt.toISOString() },
+          }
+        });
+      } catch (err) {
+        console.error('Failed to create IP ban notification:', err);
+      }
+    }
+
     res.status(options.statusCode).send(options.message);
   },
   standardHeaders: true,
@@ -27,12 +46,12 @@ export const authLimiter = rateLimit({
 const logAuthAttempt = (req: Request, res: Response, next: NextFunction) => {
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';
   const logMessage = `${new Date().toISOString()} - Auth attempt from IP: ${ip} for path: ${req.path}\n`;
-  
+
   const logFilePath = path.join(process.cwd(), 'auth.log');
   fs.appendFile(logFilePath, logMessage, (err) => {
     if (err) console.error('Failed to write to auth log:', err);
   });
-  
+
   next();
 };
 

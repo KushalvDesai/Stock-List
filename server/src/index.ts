@@ -7,6 +7,7 @@ import "dotenv/config";
 import authRoutes from './routes/auth';
 import stockRoutes from './routes/stock';
 import adminRoutes from './routes/admin';
+import notificationRoutes from './routes/notifications';
 import { prisma } from './prisma';
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });

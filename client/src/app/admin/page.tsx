@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, ShieldAlert, LogOut, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 
 interface BannedIp {
   ip: string;
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
   const toast = useToasts();
   const [bannedIps, setBannedIps] = useState<BannedIp[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -59,11 +60,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchBannedIps();
     fetchUsers();
-    // Poll every 30 seconds
+    // Poll every 120 seconds
     const interval = setInterval(() => {
       fetchBannedIps();
       fetchUsers();
-    }, 30000);
+    }, 120000);
     return () => clearInterval(interval);
   }, []);
 
@@ -101,20 +102,23 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8 text-gray-800 font-sans">
-      <nav className="flex justify-between items-center mb-12 max-w-5xl mx-auto bg-white/70 backdrop-blur-md shadow-sm px-6 py-4 rounded-2xl border border-white/20">
+      <nav className="flex justify-between items-center mb-12 max-w-5xl mx-auto bg-white/70 backdrop-blur-md shadow-sm px-6 py-4 rounded-2xl border border-white/20 relative z-50">
         <div>
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
             Admin Portal
           </h1>
           <p className="text-sm text-gray-500 font-medium">System Security Dashboard</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
+        <div className="flex items-center gap-4">
+          <NotificationDropdown />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
       </nav>
 
       <main className="max-w-5xl mx-auto flex flex-col gap-8 mt-12">
@@ -124,7 +128,7 @@ export default function AdminDashboard() {
               <ShieldAlert className="text-red-500" />
               Rate-Limited IP Addresses
             </h2>
-            <button 
+            <button
               onClick={fetchBannedIps}
               className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
               title="Refresh"
@@ -159,7 +163,7 @@ export default function AdminDashboard() {
                   {bannedIps.map((banned) => {
                     const expiryDate = new Date(banned.expiresAt);
                     return (
-                      <motion.tr 
+                      <motion.tr
                         key={banned.ip}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -194,7 +198,7 @@ export default function AdminDashboard() {
               <ShieldCheck className="text-indigo-500" />
               User Management
             </h2>
-            <button 
+            <button
               onClick={fetchUsers}
               className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
               title="Refresh Users"
@@ -218,7 +222,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {users.map((u) => (
-                    <motion.tr 
+                    <motion.tr
                       key={u.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -228,11 +232,10 @@ export default function AdminDashboard() {
                         {u.username}
                       </td>
                       <td className="py-4 px-6">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
                           u.role === 'owner' ? 'bg-blue-100 text-blue-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
+                            'bg-green-100 text-green-700'
+                          }`}>
                           {u.role}
                         </span>
                       </td>

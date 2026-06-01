@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Package, PlusCircle, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 
 export default function StaffDashboard() {
   const { user, logout } = useAuthStore();
@@ -17,20 +18,23 @@ export default function StaffDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8 text-gray-800 font-sans">
-      <nav className="flex justify-between items-center mb-12 max-w-5xl mx-auto bg-white/70 backdrop-blur-md shadow-sm px-6 py-4 rounded-2xl border border-white/20">
+      <nav className="flex justify-between items-center mb-12 max-w-5xl mx-auto bg-white/70 backdrop-blur-md shadow-sm px-6 py-4 rounded-2xl border border-white/20 relative z-50">
         <div>
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
             Staff Portal
           </h1>
           <p className="text-sm text-gray-500 font-medium">Welcome back, {user?.username || 'Staff'}</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
+        <div className="flex items-center gap-4">
+          <NotificationDropdown />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
       </nav>
 
       <main className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8 justify-center items-stretch mt-20">

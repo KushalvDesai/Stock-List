@@ -79,3 +79,13 @@ model UpdateOtp {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  role      Role     // To determine which roles see the notification
+  metadata  Json?    // For storing custom payload (like ip, expiresAt)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
