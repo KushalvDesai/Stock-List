@@ -130,7 +130,7 @@ export default function GamifiedLoginCard({ mode, onSubmit, error: externalError
               type="text"
               placeholder="Username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); setInternalError(null); }}
               className="hover:scale-105 transition-transform duration-200"
               required
             />
@@ -159,7 +159,7 @@ export default function GamifiedLoginCard({ mode, onSubmit, error: externalError
               type="password"
               placeholder="********"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setInternalError(null); }}
               className="hover:scale-105 transition-transform duration-200"
               required
             />

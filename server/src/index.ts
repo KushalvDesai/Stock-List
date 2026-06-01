@@ -6,6 +6,7 @@ import compression from 'compression';
 import "dotenv/config";
 import authRoutes from './routes/auth';
 import stockRoutes from './routes/stock';
+import adminRoutes from './routes/admin';
 import { prisma } from './prisma';
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/stock', stockRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });

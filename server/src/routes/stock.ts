@@ -167,7 +167,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
       where: { id },
       data: {
         inv: updateData.INV as string | undefined,
-        invNo: updateData.INV_NO as string | undefined,
+        invNo: updateData.INV_NO ? parseInt(updateData.INV_NO as string, 10) : undefined,
         grade: updateData.GRADE as string | undefined,
         totalBags: updateData.TOTAL_BAGS ? parseInt(updateData.TOTAL_BAGS as string, 10) : undefined,
         bagWt: updateData.BAG_WT ? parseFloat(updateData.BAG_WT as string) : undefined,

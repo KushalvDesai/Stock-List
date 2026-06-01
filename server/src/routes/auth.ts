@@ -2,17 +2,24 @@ import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import fs from 'fs';
 import path from 'path';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
-const authLimiter = rateLimit({
+export const bannedIps = new Map<string, Date>();
+
+export const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,
-  message: { message: 'Too many login attempts. Please try again after 1 hour.' },
+  handler: (req, res, next, options) => {
+    const ip = ipKeyGenerator(req.ip || 'unknown');
+    // Only set if not already tracked or if we want to reset the ban timer (usually rate limiter extends it)
+    bannedIps.set(ip, new Date(Date.now() + 60 * 60 * 1000));
+    res.status(options.statusCode).send(options.message);
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -61,9 +68,10 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     });
 
     res.status(201).json({ message: 'User registered successfully', userId: user.id });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    fs.writeFileSync(path.join(process.cwd(), 'error.log'), String(error.message || error));
+    res.status(500).json({ message: 'Internal server error', details: String(error.message || error) });
   }
 });
 

@@ -29,7 +29,7 @@ model User {
 model Stock {
   id                 String    @id @default(uuid())
   inv                String?
-  invNo              String?
+  invNo              Int?
   grade              String?
   totalBags          Int?
   bagWt              Float?
@@ -52,7 +52,7 @@ model Stock {
 model StockMaster {
   id                 String    @id @default(uuid())
   inv                String?
-  invNo              String?
+  invNo              Int?
   grade              String?
   totalBags          Int?
   bagWt              Float?
