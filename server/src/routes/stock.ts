@@ -40,6 +40,18 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
       }
     });
 
+    const isAuctionEdit = newData.auction !== undefined && String(newData.auction) !== String(stock.auction || false);
+    const title = isAuctionEdit ? 'High Priority: Auction Edit' : 'New Stock Edit Request';
+    const message = `Staff member ${currentUser?.username || 'Unknown'} proposed changes to stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'}.`;
+
+    // Create notifications for owner and admin
+    await prisma.notification.createMany({
+      data: [
+        { title, message, role: 'owner' },
+        { title, message, role: 'admin' }
+      ]
+    });
+
     res.status(201).json({ message: 'Edit request submitted for owner approval' });
   } catch (error) {
     console.error('Error submitting edit request:', error);
@@ -95,6 +107,17 @@ router.post('/edit-requests/:id/approve', authenticate, authorize(['owner', 'adm
       })
     ]);
 
+    const updatedStock = await prisma.stock.findUnique({ where: { id: editRequest.stockId } });
+    if (updatedStock) {
+      await prisma.notification.create({
+        data: {
+          title: 'Edit Request Approved',
+          message: `The edit request by ${editRequest.requestedBy} for stock ${updatedStock.inv || 'N/A'}-${updatedStock.invNo || 'N/A'} was approved.`,
+          role: 'staff'
+        }
+      });
+    }
+
     res.status(200).json({ message: 'Edit request approved' });
   } catch (error) {
     console.error('Error approving edit request:', error);
@@ -106,10 +129,28 @@ router.post('/edit-requests/:id/approve', authenticate, authorize(['owner', 'adm
 router.post('/edit-requests/:id/reject', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
+    const editRequest = await prisma.stockEditRequest.findUnique({ where: { id } });
+    if (!editRequest) {
+      res.status(404).json({ message: 'Pending edit request not found' });
+      return;
+    }
+
     await prisma.stockEditRequest.update({
       where: { id },
       data: { status: 'rejected' }
     });
+
+    const stock = await prisma.stock.findUnique({ where: { id: editRequest.stockId } });
+    if (stock) {
+      await prisma.notification.create({
+        data: {
+          title: 'Edit Request Rejected',
+          message: `The edit request by ${editRequest.requestedBy} for stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'} was rejected.`,
+          role: 'staff'
+        }
+      });
+    }
+
     res.status(200).json({ message: 'Edit request rejected' });
   } catch (error) {
     console.error('Error rejecting edit request:', error);

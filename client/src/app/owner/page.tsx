@@ -9,6 +9,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid
 } from "recharts";
 import { useAuthStore } from "@/store/authStore";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 
 interface StockEntry {
   id: string;
@@ -139,16 +140,19 @@ export default function OwnerDashboard() {
       {/* Top Navbar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
         <h1 className="text-xl font-bold text-gray-800 tracking-tight">Owner Dashboard</h1>
-        <button 
-          onClick={() => {
-            useAuthStore.getState().logout();
-            window.location.href = '/login';
-          }}
-          className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <LogOut size={16} />
-          Sign Out
-        </button>
+        <div className="flex items-center gap-4">
+          <NotificationDropdown />
+          <button 
+            onClick={() => {
+              useAuthStore.getState().logout();
+              window.location.href = '/login';
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <LogOut size={16} />
+            Sign Out
+          </button>
+        </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-6 pt-8">
