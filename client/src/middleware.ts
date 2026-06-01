@@ -13,11 +13,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (token && isPublicRoute) {
-    // Redirect to home/dashboard if accessing auth routes while logged in
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
   // Basic Role Based Access Control (RBAC)
   if (token) {
     try {
@@ -28,13 +23,23 @@ export function middleware(request: NextRequest) {
 
       const role = payload.role;
 
-      // Example route protection based on role:
-      if (path.startsWith('/admin') && role !== 'admin') {
-        return NextResponse.redirect(new URL('/', request.url));
+      if (path === '/' || isPublicRoute) {
+        if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url));
+        if (role === 'owner') return NextResponse.redirect(new URL('/owner', request.url));
+        return NextResponse.redirect(new URL('/staff', request.url));
       }
 
-      if (path.startsWith('/owner-dashboard') && role !== 'owner' && role !== 'admin') {
-        return NextResponse.redirect(new URL('/', request.url));
+      // Example route protection based on role:
+      if (path.startsWith('/admin') && role !== 'admin') {
+        return NextResponse.redirect(new URL('/staff', request.url));
+      }
+
+      if (path.startsWith('/owner') && role !== 'owner' && role !== 'admin') {
+        return NextResponse.redirect(new URL('/staff', request.url));
+      }
+
+      if (path.startsWith('/staff') && role !== 'staff' && role !== 'admin' && role !== 'owner') {
+        return NextResponse.redirect(new URL('/login', request.url));
       }
     } catch (e) {
       // Invalid token, redirect to login

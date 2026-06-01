@@ -85,6 +85,7 @@ router.post('/edit-requests/:id/approve', authenticate, authorize(['owner', 'adm
           totalBags: newData.totalBags ? parseInt(newData.totalBags, 10) : undefined,
           bagWt: newData.bagWt ? parseFloat(newData.bagWt) : undefined,
           netWt: newData.netWt ? parseFloat(newData.netWt) : undefined,
+          auction: newData.auction !== undefined ? Boolean(newData.auction) : undefined,
         }
       }),
       // Assuming StockMaster has same id or we just want to update the original
