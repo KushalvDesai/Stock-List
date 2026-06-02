@@ -1,17 +1,18 @@
+// nodemon trigger
 import { Router, Response } from 'express';
 import { prisma } from '../prisma';
 import { authenticate, AuthRequest, authorize } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Get the current staff member's assigned factory and its marks
+// Get the current staff member's assigned factories and their marks
 router.get('/my-factory', authenticate, authorize(['staff']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        factory: {
+        factories: {
           include: {
             marks: true,
           }
@@ -19,12 +20,13 @@ router.get('/my-factory', authenticate, authorize(['staff']), async (req: AuthRe
       }
     });
 
-    if (!user || !user.factory) {
-      res.status(404).json({ message: 'No factory assigned to this user' });
+    if (!user || !user.factories || user.factories.length === 0) {
+      res.status(404).json({ message: 'No factories assigned to this user' });
       return;
     }
 
-    res.status(200).json(user.factory);
+    // Return the array of factories
+    res.status(200).json(user.factories);
   } catch (error) {
     console.error('Error fetching user factory:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -114,9 +116,8 @@ router.get('/staff', authenticate, authorize(['owner', 'admin']), async (req: Au
       select: {
         id: true,
         username: true,
-        factoryId: true,
-        factory: {
-          select: { name: true }
+        factories: {
+          select: { id: true, name: true }
         }
       }
     });
@@ -128,14 +129,18 @@ router.get('/staff', authenticate, authorize(['owner', 'admin']), async (req: Au
 });
 
 // Update staff factory assignment
-router.put('/staff/:id/factory', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/staff/:id/factories', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const { factoryId } = req.body; // Can be null to remove assignment
+    const { factoryIds } = req.body; // Expect an array of factory IDs
 
     const user = await prisma.user.update({
       where: { id },
-      data: { factoryId: factoryId || null }
+      data: {
+        factories: {
+          set: (factoryIds || []).map((fid: string) => ({ id: fid }))
+        }
+      }
     });
     res.status(200).json({ message: 'Staff assignment updated successfully', user });
   } catch (error) {

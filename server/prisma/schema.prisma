@@ -57,11 +57,10 @@ model User {
   id        String   @id @default(uuid())
   username  String   @unique
   password  String
-  role      Role     @default(staff)
-  factoryId String?
-  factory   Factory? @relation(fields: [factoryId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      Role      @default(staff)
+  factories Factory[] @relation("UserFactories")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Company {
@@ -76,7 +75,7 @@ model Factory {
   companyId    String
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   marks        Mark[]
-  users        User[]
+  users        User[]        @relation("UserFactories")
   stocks       Stock[]
   stockMasters StockMaster[]
 }
