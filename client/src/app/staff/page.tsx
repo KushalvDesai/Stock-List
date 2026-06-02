@@ -7,9 +7,25 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 
+import React, { useState, useEffect } from "react";
+import { api } from "@/lib/axios";
+
 export default function StaffDashboard() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const [factory, setFactory] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchFactory = async () => {
+      try {
+        const res = await api.get('/company/my-factory');
+        setFactory(res.data);
+      } catch (error) {
+        console.error('Error fetching factory:', error);
+      }
+    };
+    fetchFactory();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -20,10 +36,15 @@ export default function StaffDashboard() {
     <div className="min-h-screen bg-gray-100 p-8 text-gray-800 font-sans">
       <nav className="flex justify-between items-center mb-8 max-w-5xl mx-auto bg-white shadow-sm px-6 py-4 rounded-md border border-gray-200 relative z-50">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             Staff Portal
+            {factory && (
+              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                {factory.name}
+              </span>
+            )}
           </h1>
-          <p className="text-sm text-gray-500 font-medium">Welcome back, {user?.username || 'Staff'}</p>
+          <p className="text-sm text-gray-500 font-medium mt-1">Welcome back, {user?.username || 'Staff'}</p>
         </div>
         <div className="flex items-center gap-4">
           <NotificationDropdown />
