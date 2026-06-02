@@ -3,13 +3,15 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
-import { Check, X, LogOut, TrendingUp, Package, Clock } from "lucide-react";
+import { Check, X, LogOut, TrendingUp, Package, Clock, Menu, Building, FileText, Settings, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { 
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid
 } from "recharts";
 import { useAuthStore } from "@/store/authStore";
 import { NotificationDropdown } from "@/components/notification-dropdown";
+import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
+import Link from "next/link";
 
 interface StockEntry {
   id: string;
@@ -36,6 +38,13 @@ interface EditRequest {
 }
 
 const COLORS = ['#10b981', '#f43f5e']; // Sold, Unsold
+
+const OWNER_LINKS: SidebarLink[] = [
+  { href: "/owner", label: "Dashboard Home", icon: Home },
+  { href: "/owner/company-management", label: "Company Management", icon: Building },
+  { href: "#", label: "Reports (Coming Soon)", icon: FileText },
+  { href: "#", label: "Settings (Coming Soon)", icon: Settings },
+];
 
 export default function OwnerDashboard() {
   const toast = useToasts();
@@ -136,10 +145,17 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
-        <h1 className="text-xl font-bold text-gray-800 tracking-tight">Owner Dashboard</h1>
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex">
+      
+      <AppSidebar title="Owner Panel" links={OWNER_LINKS} />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 ml-20">
+        {/* Top Navbar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-8 h-16 flex justify-between items-center shadow-sm">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Overview</h1>
+          </div>
         <div className="flex items-center gap-4">
           <NotificationDropdown />
           <button 
@@ -155,7 +171,7 @@ export default function OwnerDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 pt-8">
+      <div className="w-full px-8 pt-8">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded border border-gray-200 p-5 shadow-sm flex items-center justify-between">
@@ -192,8 +208,8 @@ export default function OwnerDashboard() {
           {/* Pie Chart */}
           <div className="bg-white rounded border border-gray-200 p-6 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wide">Stock Status (Entries)</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-64 min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -221,8 +237,8 @@ export default function OwnerDashboard() {
           {/* Line Chart */}
           <div className="bg-white rounded border border-gray-200 p-6 shadow-sm lg:col-span-2">
             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wide">Production vs Sales (Kg)</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-64 min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart data={lineData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                   <XAxis 
@@ -339,6 +355,7 @@ export default function OwnerDashboard() {
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

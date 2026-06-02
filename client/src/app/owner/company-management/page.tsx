@@ -6,7 +6,16 @@ import { useToasts } from "@/components/toast";
 import { LogOut, Building2, Factory, Tag, Users } from "lucide-react";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useAuthStore } from "@/store/authStore";
+import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
+import { Home, Building, FileText, Settings } from "lucide-react";
 import Link from "next/link";
+
+const OWNER_LINKS: SidebarLink[] = [
+  { href: "/owner", label: "Dashboard Home", icon: Home },
+  { href: "/owner/company-management", label: "Company Management", icon: Building },
+  { href: "#", label: "Reports (Coming Soon)", icon: FileText },
+  { href: "#", label: "Settings (Coming Soon)", icon: Settings },
+];
 
 export default function CompanyManagement() {
   const toast = useToasts();
@@ -80,9 +89,9 @@ export default function CompanyManagement() {
     }
   };
 
-  const handleAssignFactory = async (staffId: string, factoryId: string) => {
+  const handleAssignFactory = async (staffId: string, factoryIds: string[]) => {
     try {
-      await api.put(`/company/staff/${staffId}/factory`, { factoryId: factoryId || null });
+      await api.put(`/company/staff/${staffId}/factories`, { factoryIds });
       toast.success("Staff assigned successfully!");
       fetchData();
     } catch (error: any) {
@@ -97,15 +106,14 @@ export default function CompanyManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-gray-800 tracking-tight">Company Management</h1>
-          <Link href="/owner" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-            &larr; Back to Dashboard
-          </Link>
-        </div>
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex">
+      <AppSidebar title="Owner Panel" links={OWNER_LINKS} />
+      <div className="flex-1 flex flex-col min-w-0 ml-20 pb-12">
+        {/* Top Navbar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Company Management</h1>
+          </div>
         <div className="flex items-center gap-4">
           <NotificationDropdown />
           <button 
@@ -252,21 +260,37 @@ export default function CompanyManagement() {
                  <div key={user.id} className="p-4 border border-gray-100 rounded-lg bg-gray-50 flex flex-col gap-3">
                    <div className="flex justify-between items-center">
                      <span className="font-medium text-gray-800">{user.username}</span>
-                     {user.factoryId ? (
-                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-100 text-green-800 rounded">Assigned</span>
+                     {user.factories && user.factories.length > 0 ? (
+                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-100 text-green-800 rounded">Assigned ({user.factories.length})</span>
                      ) : (
                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-yellow-100 text-yellow-800 rounded">Unassigned</span>
                      )}
                    </div>
                    
-                   <select 
-                      value={user.factoryId || ""} 
-                      onChange={(e) => handleAssignFactory(user.id, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
-                    >
-                      <option value="">-- No Factory Assigned --</option>
-                      {allFactories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                    </select>
+                   <div className="bg-white border border-gray-200 rounded p-3 max-h-40 overflow-y-auto space-y-2">
+                     <p className="text-xs text-gray-500 font-semibold mb-2">Assign Factories:</p>
+                     {allFactories.map(f => {
+                       const isAssigned = user.factories?.some((uf: any) => uf.id === f.id);
+                       return (
+                         <label key={f.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                           <input 
+                             type="checkbox" 
+                             checked={isAssigned || false}
+                             onChange={(e) => {
+                               const currentIds = user.factories?.map((uf: any) => uf.id) || [];
+                               const newIds = e.target.checked 
+                                 ? [...currentIds, f.id] 
+                                 : currentIds.filter((id: string) => id !== f.id);
+                               handleAssignFactory(user.id, newIds);
+                             }}
+                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                           />
+                           {f.name}
+                         </label>
+                       );
+                     })}
+                     {allFactories.length === 0 && <p className="text-xs text-gray-400">No factories available</p>}
+                   </div>
                  </div>
                ))}
                {staff.length === 0 && (
@@ -277,6 +301,7 @@ export default function CompanyManagement() {
 
         </div>
       </div>
+    </div>
     </div>
   );
 }

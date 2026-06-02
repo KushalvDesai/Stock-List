@@ -44,17 +44,25 @@ export default function AddStockPage() {
 
   const [rows, setRows] = useState<StockRow[]>([]);
   const [marks, setMarks] = useState<any[]>([]);
-  const [factory, setFactory] = useState<any>(null);
+  const [factories, setFactories] = useState<any[]>([]);
 
   useEffect(() => {
     setRows(Array.from({ length: 5 }, () => generateEmptyRow()));
     const fetchFactory = async () => {
       try {
         const res = await api.get('/company/my-factory');
-        setFactory(res.data);
-        if (res.data?.marks) setMarks(res.data.marks);
+        const f = res.data || [];
+        setFactories(f);
+        
+        let allMarks: any[] = [];
+        f.forEach((factory: any) => {
+          if (factory.marks) {
+            allMarks = [...allMarks, ...factory.marks.map((m: any) => ({ ...m, factoryName: factory.name }))];
+          }
+        });
+        setMarks(allMarks);
       } catch (error) {
-        console.error('Error fetching factory:', error);
+        console.error('Error fetching factories:', error);
       }
     };
     fetchFactory();
@@ -129,7 +137,7 @@ export default function AddStockPage() {
   if (rows.length === 0) return null;
 
   const columns: ColumnDef[] = [
-    { key: "markId", header: "MARK", width: "w-40", type: "select", options: marks.map(m => ({ value: m.id, label: m.name })) },
+    { key: "markId", header: "MARK", width: "w-40", type: "select", options: marks.map(m => ({ value: m.id, label: `${m.name} (${m.factoryName})` })) },
     { key: "inv", header: "INV (UK, C, D)", width: "w-32", type: "text", placeholder: "ABC", uppercase: true },
     { key: "invNo", header: "INV NO", width: "w-32", type: "number", placeholder: "0" },
     { key: "grade", header: "GRADE", width: "w-40", type: "select", options: GRADES.map(g => ({ value: g, label: g })) },
@@ -149,7 +157,11 @@ export default function AddStockPage() {
         <div className="flex justify-between items-end mb-6 bg-white shadow-sm px-6 py-4 rounded-md border border-gray-200">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Bulk Stock Entry</h1>
-            <p className="text-sm text-gray-500 font-medium">Fast, Excel-like data entry for new stock.</p>
+            <p className="text-sm text-gray-500 font-medium">
+              {factories.length > 0 
+                ? `Assigned Factories: ${factories.map(f => f.name).join(', ')}`
+                : "No factories assigned."}
+            </p>
           </div>
           <div className="flex gap-4">
             <button
