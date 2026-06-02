@@ -25,6 +25,25 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.put('/read-all', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userRole = req.user?.role;
+    if (!userRole) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    await prisma.notification.updateMany({
+      where: { role: userRole as any, isRead: false },
+      data: { isRead: true },
+    });
+    res.status(200).json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
@@ -42,6 +61,23 @@ router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response):
     res.status(200).json({ message: 'Notification status updated' });
   } catch (error) {
     console.error('Error updating notification:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.delete('/clear-all', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userRole = req.user?.role;
+    if (!userRole) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    await prisma.notification.deleteMany({
+      where: { role: userRole as any },
+    });
+    res.status(200).json({ message: 'All notifications cleared' });
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

@@ -187,6 +187,12 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
 
     const currentUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
 
+    let factoryId = null;
+    if (req.body.MARK_ID) {
+      const mark = await prisma.mark.findUnique({ where: { id: req.body.MARK_ID } });
+      factoryId = mark?.factoryId || null;
+    }
+
     const data = {
       inv: INV,
       invNo: parseIntSafe(INV_NO),
@@ -204,7 +210,7 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
       purchaseSample: PURCHASE_SAMPLE as any,
       purchaseSampleDate: parseDate(PURCHASE_SAMPLE_DATE),
       user: currentUser?.username,
-      factoryId: currentUser?.factoryId,
+      factoryId: factoryId,
       markId: req.body.MARK_ID || null,
     };
 

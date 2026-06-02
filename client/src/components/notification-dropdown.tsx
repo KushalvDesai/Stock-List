@@ -9,6 +9,21 @@ export function NotificationDropdown() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const toast = useToasts();
 
+  const handleToggleOpen = async () => {
+    setIsNotifOpen(!isNotifOpen);
+    if (!isNotifOpen) {
+      const hasUnread = notifications.some(n => !n.isRead);
+      if (hasUnread) {
+        try {
+          await api.put("/notifications/read-all");
+          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        } catch (error) {
+          console.error("Failed to mark notifications as read:", error);
+        }
+      }
+    }
+  };
+
   const fetchNotifications = async () => {
     try {
       const res = await api.get("/notifications");
@@ -39,6 +54,17 @@ export function NotificationDropdown() {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await api.delete("/notifications/clear-all");
+      setNotifications([]);
+      toast.success("All notifications cleared");
+    } catch (error) {
+      console.error("Failed to clear notifications:", error);
+      toast.error("Failed to clear notifications");
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 120000);
@@ -49,16 +75,26 @@ export function NotificationDropdown() {
     <div className="relative">
       <NotificationButton 
         count={notifications.filter(n => !n.isRead).length} 
-        onClick={() => setIsNotifOpen(!isNotifOpen)}
+        onClick={handleToggleOpen}
         className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 shadow-sm"
       />
       {isNotifOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 shadow-xl rounded-2xl overflow-hidden z-50">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 className="font-semibold text-gray-800">Notifications</h3>
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
-              {notifications.length} Total
-            </span>
+            <div className="flex items-center gap-3">
+              {notifications.length > 0 && (
+                <button 
+                  onClick={handleClearAll}
+                  className="text-xs font-medium text-gray-500 hover:text-red-600 transition-colors"
+                >
+                  Clear All
+                </button>
+              )}
+              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
+                {notifications.length} Total
+              </span>
+            </div>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
@@ -89,14 +125,14 @@ export function NotificationDropdown() {
                       <div className="flex flex-col gap-2 shrink-0">
                         <button 
                           onClick={() => handleToggleNotificationStatus(notif.id, notif.isRead)}
-                          className={`p-1.5 rounded-md hover:bg-gray-200 transition-colors ${notif.isRead ? 'text-green-600' : 'text-gray-400'}`}
+                          className={`p-1.5 rounded-md hover:bg-gray-200 transition-colors ${notif.isRead ? 'text-green-600' : 'text-gray-600'}`}
                           title={notif.isRead ? "Mark as unread" : "Mark as read"}
                         >
                           {notif.isRead ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                         </button>
                         <button 
                           onClick={() => handleDeleteNotification(notif.id)}
-                          className="p-1.5 rounded-md hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                          className="p-1.5 rounded-md hover:bg-red-100 text-gray-600 hover:text-red-600 transition-colors"
                           title="Delete notification"
                         >
                           <Trash2 size={16} />
