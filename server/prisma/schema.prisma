@@ -43,6 +43,7 @@ enum Grade {
 
 enum AuctionBroker {
   J_THOMAS
+  PARCON
   CARRITT_MORAN
   PARAMOUNT
   CONTEMPORARY
@@ -57,8 +58,36 @@ model User {
   username  String   @unique
   password  String
   role      Role     @default(staff)
+  factoryId String?
+  factory   Factory? @relation(fields: [factoryId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  factories Factory[]
+}
+
+model Factory {
+  id           String        @id @default(uuid())
+  name         String        @unique
+  companyId    String
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  marks        Mark[]
+  users        User[]
+  stocks       Stock[]
+  stockMasters StockMaster[]
+}
+
+model Mark {
+  id           String        @id @default(uuid())
+  name         String
+  factoryId    String
+  factory      Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  stocks       Stock[]
+  stockMasters StockMaster[]
 }
 
 model Stock {
@@ -83,6 +112,10 @@ model Stock {
   auctionNo          String?
   auctionDate        DateTime?
   auctionBroker      AuctionBroker?
+  factoryId          String?
+  factory            Factory?  @relation(fields: [factoryId], references: [id])
+  markId             String?
+  mark               Mark?     @relation(fields: [markId], references: [id])
   timestamp          DateTime  @default(now()) @updatedAt
   user               String?
   createdAt          DateTime  @default(now())
@@ -123,6 +156,10 @@ model StockMaster {
   auctionNo          String?
   auctionDate        DateTime?
   auctionBroker      AuctionBroker?
+  factoryId          String?
+  factory            Factory?  @relation(fields: [factoryId], references: [id])
+  markId             String?
+  mark               Mark?     @relation(fields: [markId], references: [id])
   timestamp          DateTime  @default(now()) @updatedAt
   user               String?
   createdAt          DateTime  @default(now())

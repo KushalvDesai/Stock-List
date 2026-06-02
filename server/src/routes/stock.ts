@@ -204,6 +204,8 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
       purchaseSample: PURCHASE_SAMPLE as any,
       purchaseSampleDate: parseDate(PURCHASE_SAMPLE_DATE),
       user: currentUser?.username,
+      factoryId: currentUser?.factoryId,
+      markId: req.body.MARK_ID || null,
     };
 
     // Assuming we want to insert into both Stock and StockMaster,
