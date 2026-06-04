@@ -25,6 +25,9 @@ interface StockEntry {
   netWt: number | null;
   dop: string | null;
   auction: boolean | null;
+  auctionNo: string | null;
+  auctionDate: string | null;
+  auctionBroker: string | null;
   broker: string | null;
   buyer: string | null;
   soldDate: string | null;
@@ -44,7 +47,7 @@ const OWNER_LINKS: SidebarLink[] = [
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
 ];
 
-export default function PrivateSalePage() {
+export default function AuctionSalePage() {
   const toast = useToasts();
   const [stockData, setStockData] = useState<StockEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,8 +80,8 @@ export default function PrivateSalePage() {
 
   const filteredStock = useMemo(() => {
     return stockData.filter((item) => {
-      // Only show items that are NOT marked for auction
-      if (item.auction) return false;
+      // Only show items that are marked for auction
+      if (!item.auction) return false;
 
       // Filter Date (DOP)
       if (filterDate) {
@@ -179,7 +182,7 @@ export default function PrivateSalePage() {
         {/* Top Navbar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Private Sale</h1>
+            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Auction Sale</h1>
           </div>
           <div className="flex items-center gap-4">
             <NotificationDropdown />
@@ -199,7 +202,7 @@ export default function PrivateSalePage() {
         <div className="w-full max-w-[1800px] mx-auto px-8 lg:px-12 pt-8 space-y-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-white shadow-sm px-6 py-4 rounded-md border border-gray-200 gap-4">
             <div>
-              <p className="text-sm text-gray-500 font-medium mb-3">View the entire stock available for private sale.</p>
+              <p className="text-sm text-gray-500 font-medium mb-3">View the entire stock available for auction sale.</p>
               <button
                 onClick={openBulkModal}
                 disabled={selectedRowIds.length === 0}
@@ -281,11 +284,13 @@ export default function PrivateSalePage() {
                     <th className="px-4 py-3 text-right">BAG WT (kg)</th>
                     <th className="px-4 py-3 text-right">NET WT (kg)</th>
                     <th className="px-4 py-3 text-center whitespace-nowrap">DOP</th>
-                    <th className="px-4 py-3 text-center">BROKER</th>
-                    <th className="px-4 py-3 text-center">BUYER</th>
+                    
+                    {/* AUCTION FIELDS */}
+                    <th className="px-4 py-3 text-center bg-amber-50 text-amber-800">AUC NO</th>
+                    <th className="px-4 py-3 text-center bg-amber-50 text-amber-800 whitespace-nowrap">AUC DATE</th>
+                    <th className="px-4 py-3 text-center bg-amber-50 text-amber-800">AUC BROKER</th>
                     <th className="px-4 py-3 text-center whitespace-nowrap">SOLD DATE</th>
                     <th className="px-4 py-3 text-right">SOLD RATE</th>
-                    <th className="px-4 py-3 text-center">SOLD INV NO</th>
                     <th className="px-4 py-3 text-center">BILL NO</th>
                     <th className="px-4 py-3 text-center">BILTY NO</th>
                     <th className="px-4 py-3 text-center">PUR. SAMPLE</th>
@@ -295,13 +300,13 @@ export default function PrivateSalePage() {
                 <tbody className="divide-y divide-gray-100">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={18} className="px-4 py-12 text-center text-gray-500 font-medium">
+                      <td colSpan={21} className="px-4 py-12 text-center text-gray-500 font-medium">
                         Loading stock database...
                       </td>
                     </tr>
                   ) : filteredStock.length === 0 ? (
                     <tr>
-                      <td colSpan={18} className="px-4 py-12 text-center text-gray-500 font-medium">
+                      <td colSpan={21} className="px-4 py-12 text-center text-gray-500 font-medium">
                         No stock entries found matching your criteria.
                       </td>
                     </tr>
@@ -347,20 +352,22 @@ export default function PrivateSalePage() {
                           <td className="px-4 py-2.5 text-center text-gray-600 whitespace-nowrap">
                             {formatDate(row.dop)}
                           </td>
-                          <td className="px-4 py-2.5 text-center text-gray-700">
-                            {row.broker || "-"}
+                          
+                          {/* AUCTION FIELDS */}
+                          <td className="px-4 py-2.5 text-center text-amber-800 font-medium bg-amber-50/50">
+                            {row.auctionNo || "-"}
                           </td>
-                          <td className="px-4 py-2.5 text-center text-gray-700">
-                            {row.buyer || "-"}
+                          <td className="px-4 py-2.5 text-center text-amber-800 whitespace-nowrap bg-amber-50/50">
+                            {formatDate(row.auctionDate)}
+                          </td>
+                          <td className="px-4 py-2.5 text-center text-amber-800 font-medium bg-amber-50/50">
+                            {row.auctionBroker?.replace(/_/g, " ") || "-"}
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-600 whitespace-nowrap">
                             {formatDate(row.soldDate)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-medium text-gray-900">
                             {row.soldRate !== null ? `₹${row.soldRate.toFixed(2)}` : "-"}
-                          </td>
-                          <td className="px-4 py-2.5 text-center text-gray-700">
-                            {row.soldInvNo || "-"}
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-700">
                             {row.billNo || "-"}

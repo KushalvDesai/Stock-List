@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
-import { LogOut, Building2, Factory, Tag, Users } from "lucide-react";
+import { LogOut, Building2, Factory, Tag, Users, Gavel } from "lucide-react";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useAuthStore } from "@/store/authStore";
 import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
@@ -14,6 +14,7 @@ const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner", label: "Dashboard Home", icon: Home },
   { href: "/owner/company-management", label: "Company Management", icon: Building },
   { href: "/owner/private-sale", label: "Private Sale", icon: ShoppingCart },
+  { href: "/owner/auction-sale", label: "Auction Sale", icon: Gavel },
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
 ];
 
