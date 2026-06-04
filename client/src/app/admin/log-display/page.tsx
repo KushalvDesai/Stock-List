@@ -50,7 +50,7 @@ export default function LogsPage() {
   return (
     <div className="w-full h-full flex flex-col font-mono">
         {/* Top Navbar */}
-        <header className="bg-transparent border-4 border-current shadow-[4px_4px_0_0_currentColor] border-b border-current shrink-0 px-6 py-4 flex justify-between items-center shadow-none">
+        <header className="bg-yellow-50/80 dark:bg-black/80 backdrop-blur-md border-4 border-current shadow-[4px_4px_0_0_currentColor] border-b border-current shrink-0 px-6 py-4 flex justify-between items-center shadow-none sticky top-0 z-10">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-current tracking-tight">System Logs</h1>
           </div>
