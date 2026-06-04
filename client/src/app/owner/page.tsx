@@ -37,7 +37,7 @@ interface EditRequest {
   stock: StockEntry;
 }
 
-const COLORS = ['#10b981', '#f43f5e']; // Sold, Unsold
+const COLORS = ['#10b981', '#f43f5e', '#6366f1', '#f59e0b']; // Sold-Pvt, Unsold, Sold-Auction, Unsold-Auction
 
 const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner", label: "Dashboard Home", icon: Home },
@@ -94,16 +94,27 @@ export default function OwnerDashboard() {
 
   // Analytics Computation
   const pieData = useMemo(() => {
-    let sold = 0;
-    let unsold = 0;
+    let soldPvt = 0;
+    let unsoldPvt = 0;
+    let soldAuction = 0;
+    let unsoldAuction = 0;
+    
     stockData.forEach(s => {
-      if (s.soldRate !== null && s.soldRate > 0) sold++;
-      else unsold++;
+      const isSold = s.soldRate !== null && s.soldRate > 0;
+      const isAuction = !!s.auction;
+      
+      if (isAuction && isSold) soldAuction++;
+      else if (isAuction && !isSold) unsoldAuction++;
+      else if (!isAuction && isSold) soldPvt++;
+      else unsoldPvt++;
     });
+
     return [
-      { name: 'Sold', value: sold },
-      { name: 'Unsold', value: unsold }
-    ];
+      { name: 'Sold-Pvt', value: soldPvt },
+      { name: 'Unsold', value: unsoldPvt },
+      { name: 'Sold-Auction', value: soldAuction },
+      { name: 'Unsold-Auction', value: unsoldAuction }
+    ].filter(item => item.value > 0); // Only display non-zero categories
   }, [stockData]);
 
   const lineData = useMemo(() => {
