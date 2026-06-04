@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/axios";
-import { Search, FilterX, LogOut, Home, Building, FileText, ShoppingCart, Edit2, Check, X, Gavel } from "lucide-react";
+import { Search, FilterX, LogOut, Home, Building, FileText, ShoppingCart, Edit2, Check, X, Gavel, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToasts } from "@/components/toast";
 import { useAuthStore } from "@/store/authStore";
@@ -44,6 +44,7 @@ const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner/company-management", label: "Company Management", icon: Building },
   { href: "/owner/private-sale", label: "Private Sale", icon: ShoppingCart },
   { href: "/owner/auction-sale", label: "Auction Sale", icon: Gavel },
+  { href: "/owner/inventory", label: "Inventory", icon: Package },
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
 ];
 
@@ -55,8 +56,8 @@ export default function AuctionSalePage() {
   // Selection and Bulk Edit State
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
-  const [bulkGlobalData, setBulkGlobalData] = useState({ broker: "", buyer: "" });
-  const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
+  const [bulkGlobalData, setBulkGlobalData] = useState({ auctionBroker: "" });
+  const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string }>>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
   // Filters
@@ -121,16 +122,15 @@ export default function AuctionSalePage() {
   };
 
   const openBulkModal = () => {
-    const initialRowData: Record<string, { soldRate: string, soldInvNo: string }> = {};
+    const initialRowData: Record<string, { soldRate: string }> = {};
     selectedRowIds.forEach(id => {
       const row = stockData.find(s => s.id === id);
       initialRowData[id] = {
         soldRate: row?.soldRate ? String(row.soldRate) : "",
-        soldInvNo: row?.soldInvNo ? String(row.soldInvNo) : "",
       };
     });
     setBulkRowData(initialRowData);
-    setBulkGlobalData({ broker: "", buyer: "" });
+    setBulkGlobalData({ auctionBroker: "" });
     setIsBulkEditModalOpen(true);
   };
 
@@ -139,13 +139,13 @@ export default function AuctionSalePage() {
     try {
       const promises = selectedRowIds.map(id => {
         const rowInput = bulkRowData[id];
-        const payload = {
-          BROKER: bulkGlobalData.broker,
-          BUYER: bulkGlobalData.buyer,
+        const payload: any = {
           SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
-          SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
           SOLD_DATE: new Date().toISOString(),
         };
+        if (bulkGlobalData.auctionBroker) {
+          payload.AUCTION_BROKER = bulkGlobalData.auctionBroker;
+        }
         return api.put(`/stock/${id}`, payload);
       });
       
@@ -154,7 +154,7 @@ export default function AuctionSalePage() {
       toast.success(`Successfully updated ${selectedRowIds.length} items!`);
       setIsBulkEditModalOpen(false);
       setSelectedRowIds([]);
-      setBulkGlobalData({ broker: "", buyer: "" });
+      setBulkGlobalData({ auctionBroker: "" });
       setBulkRowData({});
       
       // Refresh stock data
@@ -175,14 +175,14 @@ export default function AuctionSalePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex">
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex">
       <AppSidebar title="Owner Panel" links={OWNER_LINKS} />
 
       <div className="flex-1 flex flex-col min-w-0 ml-20 pb-12">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
+        <header className="bg-slate-50 border-b border-slate-300 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-none">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Auction Sale</h1>
+            <h1 className="text-xl font-bold text-slate-700 tracking-tight">Auction Sale</h1>
           </div>
           <div className="flex items-center gap-4">
             <NotificationDropdown />
@@ -191,7 +191,7 @@ export default function AuctionSalePage() {
                 useAuthStore.getState().logout();
                 window.location.href = '/login';
               }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-slate-800 transition-colors"
             >
               <LogOut size={16} />
               Sign Out
@@ -200,13 +200,13 @@ export default function AuctionSalePage() {
         </header>
 
         <div className="w-full max-w-[1800px] mx-auto px-8 lg:px-12 pt-8 space-y-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-white shadow-sm px-6 py-4 rounded-md border border-gray-200 gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-slate-50 shadow-none px-6 py-4 rounded-none border border-slate-300 gap-4">
             <div>
               <p className="text-sm text-gray-500 font-medium mb-3">View the entire stock available for auction sale.</p>
               <button
                 onClick={openBulkModal}
                 disabled={selectedRowIds.length === 0}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-none text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-none"
               >
                 Mark Selected as Sold ({selectedRowIds.length})
               </button>
@@ -219,7 +219,7 @@ export default function AuctionSalePage() {
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm"
+                  className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm"
                 />
               </div>
 
@@ -232,7 +232,7 @@ export default function AuctionSalePage() {
                     placeholder="Search Inv No"
                     value={filterInvNo}
                     onChange={(e) => setFilterInvNo(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 w-32 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm"
+                    className="pl-8 pr-3 py-1.5 w-32 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm"
                   />
                 </div>
               </div>
@@ -242,7 +242,7 @@ export default function AuctionSalePage() {
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
-                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm cursor-pointer"
                 >
                   <option value="">All Grades</option>
                   {GRADES.map((g) => (
@@ -254,7 +254,7 @@ export default function AuctionSalePage() {
               <div className="flex flex-col justify-end h-full mt-5">
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-sm transition-colors text-sm font-medium"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-none transition-colors text-sm font-medium"
                   title="Clear all filters"
                 >
                   <FilterX size={16} />
@@ -264,15 +264,15 @@ export default function AuctionSalePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-md shadow border border-gray-200 overflow-hidden">
+          <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 uppercase text-xs tracking-wider sticky top-0 z-10 shadow-sm">
+                <thead className="bg-slate-200 text-gray-700 font-semibold border-b border-slate-300 uppercase text-xs tracking-wider sticky top-0 z-10 shadow-none">
                   <tr>
                     <th className="px-4 py-3 w-12 text-center">
                       <input 
                         type="checkbox" 
-                        className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                        className="w-4 h-4 text-indigo-600 bg-slate-200 border-gray-300 rounded-none focus:ring-indigo-500 cursor-pointer"
                         checked={filteredStock.length > 0 && selectedRowIds.length === filteredStock.length}
                         onChange={handleSelectAll}
                       />
@@ -326,15 +326,15 @@ export default function AuctionSalePage() {
                           <td className="px-4 py-2.5 text-center">
                             <input 
                               type="checkbox"
-                              className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                              className="w-4 h-4 text-indigo-600 bg-slate-200 border-gray-300 rounded-none focus:ring-indigo-500 cursor-pointer"
                               checked={isSelected}
                               onChange={() => handleSelectRow(row.id)}
                             />
                           </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-800">
+                          <td className="px-4 py-2.5 font-medium text-slate-700">
                             {row.inv || "-"}
                           </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-800">
+                          <td className="px-4 py-2.5 font-medium text-slate-700">
                             {row.invNo || "-"}
                           </td>
                           <td className="px-4 py-2.5 font-bold text-indigo-700">
@@ -346,7 +346,7 @@ export default function AuctionSalePage() {
                           <td className="px-4 py-2.5 text-right font-medium text-gray-700">
                             {row.bagWt?.toFixed(1) || "0.0"}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-semibold text-gray-900">
+                          <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
                             {row.netWt?.toFixed(2) || "0.00"}
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-600 whitespace-nowrap">
@@ -366,7 +366,7 @@ export default function AuctionSalePage() {
                           <td className="px-4 py-2.5 text-center text-gray-600 whitespace-nowrap">
                             {formatDate(row.soldDate)}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                          <td className="px-4 py-2.5 text-right font-medium text-slate-800">
                             {row.soldRate !== null ? `₹${row.soldRate.toFixed(2)}` : "-"}
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-700">
@@ -377,9 +377,9 @@ export default function AuctionSalePage() {
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             {row.purchaseSample ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">Yes</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-none text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">Yes</span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">No</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-none text-xs font-medium bg-slate-200 text-gray-600 border border-slate-300">No</span>
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-600 whitespace-nowrap">
@@ -393,7 +393,7 @@ export default function AuctionSalePage() {
                 </tbody>
               </table>
             </div>
-            <div className="bg-gray-50 border-t border-gray-200 p-3 px-4 flex justify-between items-center text-sm">
+            <div className="bg-slate-100 border-t border-slate-300 p-3 px-4 flex justify-between items-center text-sm">
               <span className="font-medium text-gray-700">Showing {filteredStock.length} entr{filteredStock.length === 1 ? 'y' : 'ies'}</span>
             </div>
           </div>
@@ -406,49 +406,48 @@ export default function AuctionSalePage() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-slate-50 rounded-none shadow-none w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
           >
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-              <h2 className="text-lg font-bold text-gray-800">Mark Selected as Sold ({selectedRowIds.length})</h2>
+            <div className="px-6 py-4 border-b border-slate-300 flex justify-between items-center bg-slate-100">
+              <h2 className="text-lg font-bold text-slate-700">Mark Selected as Sold ({selectedRowIds.length})</h2>
               <button onClick={() => setIsBulkEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-6 mb-8 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+              <div className="grid grid-cols-1 gap-6 mb-8 bg-amber-50 p-4 rounded-none border border-amber-100">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Global Broker</label>
-                  <input 
-                    type="text"
-                    value={bulkGlobalData.broker}
-                    onChange={(e) => setBulkGlobalData(prev => ({ ...prev, broker: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
-                    placeholder="Enter Broker Name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Global Buyer</label>
-                  <input 
-                    type="text"
-                    value={bulkGlobalData.buyer}
-                    onChange={(e) => setBulkGlobalData(prev => ({ ...prev, buyer: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
-                    placeholder="Enter Buyer Name"
-                  />
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Global Auction Broker</label>
+                  <select
+                    value={bulkGlobalData.auctionBroker}
+                    onChange={(e) => setBulkGlobalData({ auctionBroker: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-colors"
+                  >
+                    <option value="">Select Auction Broker...</option>
+                    <option value="J_THOMAS">J Thomas</option>
+                    <option value="PARCON">Parcon</option>
+                    <option value="CARRITT_MORAN">Carritt Moran</option>
+                    <option value="PARAMOUNT">Paramount</option>
+                    <option value="CONTEMPORARY">Contemporary</option>
+                    <option value="ATB">ATB</option>
+                    <option value="PTM">PTM</option>
+                    <option value="ASSAM_TEA_BROKERS">Assam Tea Brokers</option>
+                    <option value="OTHER">Other</option>
+                  </select>
                 </div>
               </div>
 
-              <h3 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2">Individual Line Details</h3>
+              <h3 className="text-sm font-bold text-slate-700 mb-4 border-b pb-2">Individual Line Details</h3>
               <div className="space-y-4">
                 {selectedRowIds.map(id => {
                   const row = stockData.find(s => s.id === id);
                   if (!row) return null;
-                  const rowData = bulkRowData[id] || { soldRate: "", soldInvNo: "" };
+                  const rowData = bulkRowData[id] || { soldRate: "" };
 
                   return (
-                    <div key={id} className="grid grid-cols-12 gap-6 items-center bg-white p-4 rounded-md border border-gray-200 shadow-sm">
-                      <div className="col-span-4 text-sm">
-                        <div className="font-bold text-gray-900 mb-1">
+                    <div key={id} className="grid grid-cols-12 gap-6 items-center bg-slate-50 p-4 rounded-none border border-slate-300 shadow-none">
+                      <div className="col-span-8 text-sm">
+                        <div className="font-bold text-slate-800 mb-1">
                           {row.inv || "-"} / {row.invNo || "-"}
                         </div>
                         <div className="text-gray-500 text-xs font-medium">
@@ -462,45 +461,26 @@ export default function AuctionSalePage() {
                           step="0.01"
                           value={rowData.soldRate}
                           onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldRate: e.target.value } }))}
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-none focus:ring-2 focus:ring-amber-500 outline-none"
                           placeholder="e.g. 150.50"
                         />
-                      </div>
-                      <div className="col-span-4">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Sold Inv No</label>
-                        <div className="flex gap-2">
-                          <input 
-                            type="number"
-                            value={rowData.soldInvNo}
-                            onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldInvNo: e.target.value } }))}
-                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
-                            placeholder="Optional"
-                          />
-                          <button 
-                            title="Copy original Inv No"
-                            onClick={() => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldInvNo: String(row.invNo || "") } }))}
-                            className="px-2 py-1.5 bg-gray-100 border border-gray-300 rounded text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors"
-                          >
-                            Copy Original
-                          </button>
-                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-300 bg-slate-100 flex justify-end gap-3">
               <button 
                 onClick={() => setIsBulkEditModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-200 bg-gray-100 border border-gray-300 rounded-md transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-slate-800 hover:bg-gray-200 bg-slate-200 border border-gray-300 rounded-none transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={submitBulkEdit}
                 disabled={isSubmittingEdit}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-none shadow-none transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {isSubmittingEdit ? "Saving..." : "Save Details"}
               </button>

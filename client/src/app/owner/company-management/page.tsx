@@ -7,7 +7,7 @@ import { LogOut, Building2, Factory, Tag, Users, Gavel } from "lucide-react";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useAuthStore } from "@/store/authStore";
 import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
-import { Home, Building, FileText, ShoppingCart } from "lucide-react";
+import { Home, Building, FileText, ShoppingCart, Package } from "lucide-react";
 import Link from "next/link";
 
 const OWNER_LINKS: SidebarLink[] = [
@@ -15,6 +15,7 @@ const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner/company-management", label: "Company Management", icon: Building },
   { href: "/owner/private-sale", label: "Private Sale", icon: ShoppingCart },
   { href: "/owner/auction-sale", label: "Auction Sale", icon: Gavel },
+  { href: "/owner/inventory", label: "Inventory", icon: Package },
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
 ];
 
@@ -103,17 +104,17 @@ export default function CompanyManagement() {
   const allFactories = companies.flatMap(c => c.factories);
 
   if (isLoading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-slate-100 flex items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex">
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex">
       <AppSidebar title="Owner Panel" links={OWNER_LINKS} />
       <div className="flex-1 flex flex-col min-w-0 ml-20 pb-12">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
+        <header className="bg-slate-50 border-b border-slate-300 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-none">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Company Management</h1>
+            <h1 className="text-xl font-bold text-slate-700 tracking-tight">Company Management</h1>
           </div>
         <div className="flex items-center gap-4">
           <NotificationDropdown />
@@ -122,7 +123,7 @@ export default function CompanyManagement() {
               useAuthStore.getState().logout();
               window.location.href = '/login';
             }}
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-slate-800 transition-colors"
           >
             <LogOut size={16} />
             Sign Out
@@ -139,7 +140,7 @@ export default function CompanyManagement() {
           <div className="space-y-6">
             
             {/* Create Company */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 p-6">
               <h2 className="text-lg font-bold flex items-center gap-2 mb-4"><Building2 size={20} className="text-indigo-500" /> Add Company</h2>
               <form onSubmit={handleCreateCompany} className="flex gap-2">
                 <input 
@@ -147,22 +148,22 @@ export default function CompanyManagement() {
                   value={newCompanyName} 
                   onChange={(e) => setNewCompanyName(e.target.value)}
                   placeholder="Company Name"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
-                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-none text-sm font-medium transition-colors">
                   Add
                 </button>
               </form>
             </div>
 
             {/* Create Factory */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 p-6">
               <h2 className="text-lg font-bold flex items-center gap-2 mb-4"><Factory size={20} className="text-indigo-500" /> Add Factory</h2>
               <form onSubmit={handleCreateFactory} className="space-y-3">
                 <select 
                   value={selectedCompanyId} 
                   onChange={(e) => setSelectedCompanyId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="">Select Company...</option>
                   {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -173,9 +174,9 @@ export default function CompanyManagement() {
                     value={newFactoryName} 
                     onChange={(e) => setNewFactoryName(e.target.value)}
                     placeholder="Factory Name"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
-                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-none text-sm font-medium transition-colors">
                     Add
                   </button>
                 </div>
@@ -183,13 +184,13 @@ export default function CompanyManagement() {
             </div>
 
             {/* Create Mark */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 p-6">
               <h2 className="text-lg font-bold flex items-center gap-2 mb-4"><Tag size={20} className="text-indigo-500" /> Add Mark</h2>
               <form onSubmit={handleCreateMark} className="space-y-3">
                 <select 
                   value={selectedFactoryId} 
                   onChange={(e) => setSelectedFactoryId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="">Select Factory...</option>
                   {allFactories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
@@ -200,9 +201,9 @@ export default function CompanyManagement() {
                     value={newMarkName} 
                     onChange={(e) => setNewMarkName(e.target.value)}
                     placeholder="Mark Name"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
-                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-none text-sm font-medium transition-colors">
                     Add
                   </button>
                 </div>
@@ -212,12 +213,12 @@ export default function CompanyManagement() {
           </div>
 
           {/* Middle Column: Architecture View */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
+          <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 p-6 lg:col-span-1">
             <h2 className="text-lg font-bold mb-6 border-b pb-2">Hierarchy</h2>
             <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
               {companies.map(company => (
-                <div key={company.id} className="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-                  <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">
+                <div key={company.id} className="border border-gray-100 rounded-none p-4 bg-slate-100/50">
+                  <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
                     <Building2 size={16} className="text-gray-400" /> {company.name}
                   </h3>
                   {company.factories.length === 0 ? (
@@ -234,7 +235,7 @@ export default function CompanyManagement() {
                           ) : (
                             <div className="flex flex-wrap gap-2 pl-6">
                               {factory.marks.map((mark: any) => (
-                                <span key={mark.id} className="inline-flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded-md text-xs font-medium text-gray-600 shadow-sm">
+                                <span key={mark.id} className="inline-flex items-center gap-1 bg-slate-50 border border-slate-300 px-2 py-1 rounded-none text-xs font-medium text-gray-600 shadow-none">
                                   <Tag size={10} /> {mark.name}
                                 </span>
                               ))}
@@ -253,27 +254,27 @@ export default function CompanyManagement() {
           </div>
 
           {/* Right Column: Staff Management */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
+          <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 p-6 lg:col-span-1">
              <h2 className="text-lg font-bold flex items-center gap-2 mb-6 border-b pb-2"><Users size={20} className="text-indigo-500" /> Staff Assignment</h2>
              
              <div className="space-y-3">
                {staff.map(user => (
-                 <div key={user.id} className="p-4 border border-gray-100 rounded-lg bg-gray-50 flex flex-col gap-3">
+                 <div key={user.id} className="p-4 border border-gray-100 rounded-none bg-slate-100 flex flex-col gap-3">
                    <div className="flex justify-between items-center">
-                     <span className="font-medium text-gray-800">{user.username}</span>
+                     <span className="font-medium text-slate-700">{user.username}</span>
                      {user.factories && user.factories.length > 0 ? (
-                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-100 text-green-800 rounded">Assigned ({user.factories.length})</span>
+                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-100 text-green-800 rounded-none">Assigned ({user.factories.length})</span>
                      ) : (
-                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-yellow-100 text-yellow-800 rounded">Unassigned</span>
+                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-yellow-100 text-yellow-800 rounded-none">Unassigned</span>
                      )}
                    </div>
                    
-                   <div className="bg-white border border-gray-200 rounded p-3 max-h-40 overflow-y-auto space-y-2">
+                   <div className="bg-slate-50 border border-slate-300 rounded-none p-3 max-h-40 overflow-y-auto space-y-2">
                      <p className="text-xs text-gray-500 font-semibold mb-2">Assign Factories:</p>
                      {allFactories.map(f => {
                        const isAssigned = user.factories?.some((uf: any) => uf.id === f.id);
                        return (
-                         <label key={f.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                         <label key={f.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-100 p-1 rounded-none">
                            <input 
                              type="checkbox" 
                              checked={isAssigned || false}
@@ -284,7 +285,7 @@ export default function CompanyManagement() {
                                  : currentIds.filter((id: string) => id !== f.id);
                                handleAssignFactory(user.id, newIds);
                              }}
-                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                             className="rounded-none border-gray-300 text-indigo-600 focus:ring-indigo-500"
                            />
                            {f.name}
                          </label>

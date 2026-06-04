@@ -8,7 +8,8 @@ const router = Router();
 router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const stock = await prisma.stock.findMany({
-      orderBy: { dop: 'desc' },
+      include: { factory: true, mark: true },
+      orderBy: { createdAt: 'asc' },
     });
     res.status(200).json(stock);
   } catch (error) {
@@ -353,6 +354,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
         purchaseSample: updateData.PURCHASE_SAMPLE as any,
         purchaseSampleDate: updateData.purchaseSampleDate,
         user: currentUser?.username,
+        auctionBroker: updateData.AUCTION_BROKER as any,
       },
     });
 
