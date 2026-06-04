@@ -55,6 +55,7 @@ const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner/company-management", label: "Company Management", icon: Building },
   { href: "/owner/private-sale", label: "Private Sale", icon: ShoppingCart },
   { href: "/owner/auction-sale", label: "Auction Sale", icon: Gavel },
+  { href: "/owner/inventory", label: "Inventory", icon: Package },
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
 ];
 
