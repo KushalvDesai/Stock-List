@@ -298,23 +298,31 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
     const { otp, ...updateData } = req.body;
     const otpStr = otp as string;
 
-    if (!otpStr) {
-      res.status(400).json({ message: 'OTP is required to update stock' });
-      return;
-    }
+    const userRole = req.user?.role;
 
-    // Find valid OTP
-    const validOtp = await prisma.updateOtp.findFirst({
-      where: {
-        stockId: id,
-        otp: otpStr,
-        expiresAt: { gt: new Date() },
-      },
-    });
+    // Owners and admins can bypass the OTP requirement
+    if (userRole !== 'owner' && userRole !== 'admin') {
+      if (!otpStr) {
+        res.status(400).json({ message: 'OTP is required to update stock' });
+        return;
+      }
 
-    if (!validOtp) {
-      res.status(401).json({ message: 'Invalid or expired OTP' });
-      return;
+      // Find valid OTP
+      const validOtp = await prisma.updateOtp.findFirst({
+        where: {
+          stockId: id,
+          otp: otpStr,
+          expiresAt: { gt: new Date() },
+        },
+      });
+
+      if (!validOtp) {
+        res.status(401).json({ message: 'Invalid or expired OTP' });
+        return;
+      }
+      
+      // Delete the used OTP
+      await prisma.updateOtp.delete({ where: { id: validOtp.id } });
     }
 
     // Process dates and numbers in updateData safely
@@ -339,6 +347,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
         buyer: updateData.BUYER as string | undefined,
         soldDate: updateData.soldDate,
         soldRate: updateData.SOLD_RATE ? parseFloat(updateData.SOLD_RATE as string) : undefined,
+        soldInvNo: updateData.SOLD_INV_NO ? parseInt(updateData.SOLD_INV_NO as string, 10) : undefined,
         billNo: updateData.BILL_NO as string | undefined,
         biltyNo: updateData.BILTY_NO as string | undefined,
         purchaseSample: updateData.PURCHASE_SAMPLE as any,
@@ -347,8 +356,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
       },
     });
 
-    // Delete the used OTP
-    await prisma.updateOtp.delete({ where: { id: validOtp.id } });
+    // Return success
 
     res.status(200).json({ message: 'Stock entry updated successfully', stock: updatedStock });
   } catch (error) {

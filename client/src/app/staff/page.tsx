@@ -13,18 +13,18 @@ import { api } from "@/lib/axios";
 export default function StaffDashboard() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  const [factory, setFactory] = useState<any>(null);
+  const [factories, setFactories] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchFactory = async () => {
+    const fetchFactories = async () => {
       try {
         const res = await api.get('/company/my-factory');
-        setFactory(res.data);
+        setFactories(res.data || []);
       } catch (error) {
-        console.error('Error fetching factory:', error);
+        console.error('Error fetching factories:', error);
       }
     };
-    fetchFactory();
+    fetchFactories();
   }, []);
 
   const handleLogout = () => {
@@ -38,10 +38,14 @@ export default function StaffDashboard() {
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             Staff Portal
-            {factory && (
-              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
-                {factory.name}
-              </span>
+            {factories.length > 0 && (
+              <div className="flex gap-2 ml-2">
+                {factories.map((f: any) => (
+                  <span key={f.id} className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                    {f.name}
+                  </span>
+                ))}
+              </div>
             )}
           </h1>
           <p className="text-sm text-gray-500 font-medium mt-1">Welcome back, {user?.username || 'Staff'}</p>

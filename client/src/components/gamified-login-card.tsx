@@ -137,22 +137,6 @@ export default function GamifiedLoginCard({ mode, onSubmit, error: externalError
               required
             />
           </div>
-          
-          {mode === "signup" && (
-            <div>
-              <Label htmlFor="role">Role</Label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:scale-105 transition-transform duration-200"
-              >
-                <option value="staff">Staff</option>
-                <option value="owner">Owner</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          )}
 
           <div>
             <Label htmlFor="password">Password</Label>

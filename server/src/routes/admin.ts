@@ -71,4 +71,26 @@ router.post('/users/:id/password', authenticate, authorize(['admin']), async (re
   }
 });
 
+router.post('/users/:id/role', authenticate, authorize(['admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { role } = req.body;
+
+    if (!['staff', 'owner', 'admin'].includes(role)) {
+      res.status(400).json({ message: 'Invalid role' });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+
+    res.status(200).json({ message: 'Role updated successfully' });
+  } catch (error) {
+    console.error('Error updating role:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;

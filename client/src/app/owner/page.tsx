@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
-import { Check, X, LogOut, TrendingUp, Package, Clock, Menu, Building, FileText, Settings, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { Check, X, LogOut, TrendingUp, Package, Clock, Menu, Building, FileText, Settings, ChevronLeft, ChevronRight, Home, ShoppingCart } from "lucide-react";
 import { 
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid
@@ -42,8 +42,8 @@ const COLORS = ['#10b981', '#f43f5e']; // Sold, Unsold
 const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner", label: "Dashboard Home", icon: Home },
   { href: "/owner/company-management", label: "Company Management", icon: Building },
+  { href: "/owner/private-sale", label: "Private Sale", icon: ShoppingCart },
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
-  { href: "#", label: "Settings (Coming Soon)", icon: Settings },
 ];
 
 export default function OwnerDashboard() {

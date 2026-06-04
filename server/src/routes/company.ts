@@ -21,7 +21,7 @@ router.get('/my-factory', authenticate, authorize(['staff']), async (req: AuthRe
     });
 
     if (!user || !user.factories || user.factories.length === 0) {
-      res.status(404).json({ message: 'No factories assigned to this user' });
+      res.status(200).json([]);
       return;
     }
 

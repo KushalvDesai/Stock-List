@@ -7,14 +7,14 @@ import { LogOut, Building2, Factory, Tag, Users } from "lucide-react";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useAuthStore } from "@/store/authStore";
 import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
-import { Home, Building, FileText, Settings } from "lucide-react";
+import { Home, Building, FileText, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 const OWNER_LINKS: SidebarLink[] = [
   { href: "/owner", label: "Dashboard Home", icon: Home },
   { href: "/owner/company-management", label: "Company Management", icon: Building },
+  { href: "/owner/private-sale", label: "Private Sale", icon: ShoppingCart },
   { href: "#", label: "Reports (Coming Soon)", icon: FileText },
-  { href: "#", label: "Settings (Coming Soon)", icon: Settings },
 ];
 
 export default function CompanyManagement() {
@@ -129,7 +129,7 @@ export default function CompanyManagement() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 pt-8 space-y-8">
+      <div className="w-full max-w-[1800px] mx-auto px-8 lg:px-12 pt-8 space-y-8">
         
         {/* Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
