@@ -11,6 +11,7 @@ import notificationRoutes from './routes/notifications';
 import companyRoutes from './routes/company';
 import { prisma } from './prisma';
 import { initLogger } from './utils/logger';
+import { telemetryMiddleware } from './utils/telemetry';
 
 initLogger();
 
@@ -23,6 +24,9 @@ app.use(morgan('dev'));
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Telemetry tracker
+app.use(telemetryMiddleware);
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -3,9 +3,10 @@ import { CheckCircle2, Circle, Trash2 } from "lucide-react";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
 import { NotificationButton } from "@/components/ui/notification-button";
+import { useNotificationStore } from "@/store/notificationStore";
 
 export function NotificationDropdown() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const { notifications, fetchNotifications, setNotifications } = useNotificationStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const toast = useToasts();
 
@@ -21,15 +22,6 @@ export function NotificationDropdown() {
           console.error("Failed to mark notifications as read:", error);
         }
       }
-    }
-  };
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await api.get("/notifications");
-      setNotifications(res.data);
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
     }
   };
 
@@ -67,9 +59,10 @@ export function NotificationDropdown() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 120000);
+    // Poll every 60 seconds (store will handle cache checking)
+    const interval = setInterval(() => fetchNotifications(true), 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotifications]);
 
   return (
     <div className="relative">

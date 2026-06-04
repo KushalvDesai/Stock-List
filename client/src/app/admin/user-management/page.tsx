@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { LogOut, RefreshCw, Home, Users, ShieldCheck, Terminal } from "lucide-react";
+import { LogOut, RefreshCw, Home, Users, ShieldCheck, Terminal, Activity } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
@@ -21,6 +21,7 @@ const ADMIN_LINKS: SidebarLink[] = [
   { href: "/admin", label: "Security Dashboard", icon: Home },
   { href: "/admin/user-management", label: "User Management", icon: Users },
   { href: "/admin/log-display", label: "System Logs", icon: Terminal },
+  { href: "/admin/telemetry", label: "Telemetry", icon: Activity },
 ];
 
 export default function UserManagementPage() {

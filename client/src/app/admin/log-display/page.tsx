@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { LogOut, Home, Users, Terminal, RefreshCw, Trash2 } from "lucide-react";
+import { LogOut, Home, Users, Terminal, RefreshCw, Trash2, Activity } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
@@ -12,6 +12,7 @@ const ADMIN_LINKS: SidebarLink[] = [
   { href: "/admin", label: "Security Dashboard", icon: Home },
   { href: "/admin/user-management", label: "User Management", icon: Users },
   { href: "/admin/log-display", label: "System Logs", icon: Terminal },
+  { href: "/admin/telemetry", label: "Telemetry", icon: Activity },
 ];
 
 export default function LogsPage() {

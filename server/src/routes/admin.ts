@@ -4,6 +4,7 @@ import { prisma } from '../prisma';
 import { authenticate, authorize, AuthRequest } from '../middleware/authMiddleware';
 import { authLimiter, bannedIps } from './auth';
 import { serverLogs, clientLogs } from '../utils/logger';
+import { getTelemetryData } from '../utils/telemetry';
 
 const router = Router();
 
@@ -108,6 +109,10 @@ router.post('/logs/client', (req: Request, res: Response) => {
     if (clientLogs.length > 1000) clientLogs.shift();
   }
   res.status(200).send('ok');
+});
+
+router.get('/telemetry', authenticate, authorize(['admin']), (req: AuthRequest, res: Response) => {
+  res.status(200).json(getTelemetryData());
 });
 
 export default router;
