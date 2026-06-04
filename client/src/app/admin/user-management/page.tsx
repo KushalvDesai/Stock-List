@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { LogOut, RefreshCw, Home, Users, ShieldCheck } from "lucide-react";
+import { LogOut, RefreshCw, Home, Users, ShieldCheck, Terminal } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
@@ -20,13 +20,14 @@ interface AppUser {
 const ADMIN_LINKS: SidebarLink[] = [
   { href: "/admin", label: "Security Dashboard", icon: Home },
   { href: "/admin/user-management", label: "User Management", icon: Users },
+  { href: "/admin/log-display", label: "System Logs", icon: Terminal },
 ];
 
 export default function UserManagementPage() {
   const { logout } = useAuthStore();
   const router = useRouter();
   const toast = useToasts();
-  
+
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -150,7 +151,7 @@ export default function UserManagementPage() {
                         </td>
                         <td className="py-4 px-6">
                           {editingRoleId === u.id ? (
-                            <select 
+                            <select
                               defaultValue={u.role}
                               onChange={(e) => handleChangeRole(u.id, e.target.value)}
                               onBlur={() => setEditingRoleId(null)}
@@ -162,13 +163,12 @@ export default function UserManagementPage() {
                               <option value="admin">admin</option>
                             </select>
                           ) : (
-                            <button 
+                            <button
                               onClick={() => setEditingRoleId(u.id)}
-                              className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${
-                                u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                u.role === 'owner' ? 'bg-blue-100 text-blue-700' :
-                                'bg-green-100 text-green-700'
-                              }`}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                  u.role === 'owner' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-green-100 text-green-700'
+                                }`}
                               title="Click to change role"
                             >
                               {u.role}

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../prisma';
 import { authenticate, authorize, AuthRequest } from '../middleware/authMiddleware';
 import { authLimiter, bannedIps } from './auth';
+import { serverLogs, clientLogs } from '../utils/logger';
 
 const router = Router();
 
@@ -91,6 +92,22 @@ router.post('/users/:id/role', authenticate, authorize(['admin']), async (req: A
     console.error('Error updating role:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+});
+
+router.get('/logs', authenticate, authorize(['admin']), (req: AuthRequest, res: Response) => {
+  res.status(200).json({ 
+    server: serverLogs.join(''), 
+    client: clientLogs.join('') 
+  });
+});
+
+router.post('/logs/client', (req: Request, res: Response) => {
+  const { log } = req.body;
+  if (log) {
+    clientLogs.push(log);
+    if (clientLogs.length > 1000) clientLogs.shift();
+  }
+  res.status(200).send('ok');
 });
 
 export default router;

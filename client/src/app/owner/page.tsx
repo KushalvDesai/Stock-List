@@ -13,6 +13,17 @@ import { NotificationDropdown } from "@/components/notification-dropdown";
 import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
 import Link from "next/link";
 
+// Suppress Recharts ResponsiveContainer warning
+if (typeof window !== "undefined") {
+  const originalWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    if (typeof args[0] === "string" && args[0].includes("The width(-1) and height(-1) of chart")) {
+      return;
+    }
+    originalWarn(...args);
+  };
+}
+
 interface StockEntry {
   id: string;
   inv: string | null;

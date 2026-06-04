@@ -10,6 +10,9 @@ import adminRoutes from './routes/admin';
 import notificationRoutes from './routes/notifications';
 import companyRoutes from './routes/company';
 import { prisma } from './prisma';
+import { initLogger } from './utils/logger';
+
+initLogger();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
