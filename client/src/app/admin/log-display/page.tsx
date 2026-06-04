@@ -6,14 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
 import { NotificationDropdown } from "@/components/notification-dropdown";
-import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
 
-const ADMIN_LINKS: SidebarLink[] = [
-  { href: "/admin", label: "Security Dashboard", icon: Home },
-  { href: "/admin/user-management", label: "User Management", icon: Users },
-  { href: "/admin/log-display", label: "System Logs", icon: Terminal },
-  { href: "/admin/telemetry", label: "Telemetry", icon: Activity },
-];
 
 export default function LogsPage() {
   const { logout } = useAuthStore();
@@ -55,20 +48,17 @@ export default function LogsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex">
-      <AppSidebar title="Admin Panel" links={ADMIN_LINKS} />
-
-      <div className="flex-1 flex flex-col min-w-0 ml-20 h-screen">
+    <div className="w-full h-full flex flex-col font-mono">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-200 shrink-0 px-6 py-4 flex justify-between items-center shadow-sm">
+        <header className="bg-transparent border-4 border-current shadow-[4px_4px_0_0_currentColor] border-b border-current shrink-0 px-6 py-4 flex justify-between items-center shadow-none">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight">System Logs</h1>
+            <h1 className="text-xl font-bold text-current tracking-tight">System Logs</h1>
           </div>
           <div className="flex items-center gap-4">
             <NotificationDropdown />
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-current hover:text-current transition-none"
             >
               <LogOut size={16} />
               Sign Out
@@ -77,7 +67,7 @@ export default function LogsPage() {
         </header>
 
         <div className="flex-1 flex flex-col w-full max-w-7xl mx-auto px-8 lg:px-12 py-8">
-          <div className="bg-black shadow-2xl rounded-sm flex flex-col overflow-hidden border border-gray-800 h-[600px]">
+          <div className="bg-black shadow-none rounded-none flex flex-col overflow-hidden border border-current h-[600px]">
             {/* Terminal Header */}
             <div className="bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-6">
@@ -85,13 +75,13 @@ export default function LogsPage() {
                 <div className="flex gap-2 border-l border-slate-600 pl-6">
                   <button 
                     onClick={() => setActiveTab('server')}
-                    className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${activeTab === 'server' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    className={`px-3 py-1 rounded-none text-xs font-semibold uppercase tracking-wider transition-none ${activeTab === 'server' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                   >
                     Server
                   </button>
                   <button 
                     onClick={() => setActiveTab('client')}
-                    className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${activeTab === 'client' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    className={`px-3 py-1 rounded-none text-xs font-semibold uppercase tracking-wider transition-none ${activeTab === 'client' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                   >
                     Client
                   </button>
@@ -110,6 +100,5 @@ export default function LogsPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
