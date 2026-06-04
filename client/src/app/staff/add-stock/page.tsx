@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, Download, Upload } from "lucide-react";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
 import { ExcelGrid, ColumnDef } from "@/components/excel-grid";
+import * as XLSX from "xlsx";
 
 const GRADES = [
   "BPS", "BOP", "BOPSM", "BP", "BPSM", "PF", "PD", "DUST", "CD",
@@ -28,6 +29,7 @@ interface StockRow {
 export default function AddStockPage() {
   const toast = useToasts();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const today = new Date().toISOString().split("T")[0];
 
   const generateEmptyRow = (): StockRow => ({
@@ -134,6 +136,108 @@ export default function AddStockPage() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    // Define exactly the headers that the system expects
+    const headers = [
+      "MARK",
+      "INV",
+      "INV NO",
+      "GRADE",
+      "TOTAL BAGS",
+      "BAG WT (kg)",
+      "NET WT (kg)",
+      "DOP"
+    ];
+
+    // Create a worksheet with just the headers
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    
+    // Auto-size columns to look neat
+    const wscols = headers.map(h => ({ wch: Math.max(12, h.length) }));
+    ws['!cols'] = wscols;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stock Template");
+
+    // Export the file
+    XLSX.writeFile(wb, "Add_Stock_Template.xlsx");
+    toast.success("Template downloaded!");
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        // Parse the workbook
+        const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        
+        // Convert to array of objects
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        if (data.length === 0) {
+          toast.error("The uploaded Excel file is empty.");
+          return;
+        }
+
+        const newRows: StockRow[] = data.map((row: any) => {
+          // Match mark name to mark ID
+          const markName = row["MARK"] ? String(row["MARK"]).trim() : "";
+          const foundMark = marks.find(m => m.name.toLowerCase() === markName.toLowerCase());
+          
+          // Safely parse the Date
+          let dopStr = today;
+          if (row["DOP"]) {
+            if (row["DOP"] instanceof Date) {
+              // Ensure timezone offset doesn't mess up the date
+              const offset = row["DOP"].getTimezoneOffset() * 60000;
+              dopStr = new Date(row["DOP"].getTime() - offset).toISOString().split('T')[0];
+            } else {
+              const d = new Date(row["DOP"]);
+              if (!isNaN(d.getTime())) {
+                dopStr = d.toISOString().split('T')[0];
+              }
+            }
+          }
+
+          return {
+            id: Math.random().toString(36).substring(7),
+            markId: foundMark ? foundMark.id : "",
+            inv: row["INV"] ? String(row["INV"]) : "",
+            invNo: row["INV NO"] ? String(row["INV NO"]) : "",
+            grade: row["GRADE"] ? String(row["GRADE"]) : "BP",
+            totalBags: row["TOTAL BAGS"] ? String(row["TOTAL BAGS"]) : "",
+            bagWt: row["BAG WT (kg)"] ? String(row["BAG WT (kg)"]) : "",
+            netWt: row["NET WT (kg)"] ? String(row["NET WT (kg)"]) : "",
+            dop: dopStr,
+          };
+        });
+
+        // Add extra empty rows if imported count is less than 5
+        while (newRows.length < 5) {
+          newRows.push(generateEmptyRow());
+        }
+
+        setRows(newRows);
+        toast.success(`Successfully imported ${data.length} rows from Excel!`);
+      } catch (err) {
+        console.error("Error parsing Excel:", err);
+        toast.error("Failed to parse the Excel file. Make sure it matches the template.");
+      }
+      
+      // Reset input so the same file can be uploaded again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   if (rows.length === 0) return null;
 
   const columns: ColumnDef[] = [
@@ -164,6 +268,27 @@ export default function AddStockPage() {
             </p>
           </div>
           <div className="flex gap-4">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept=".xlsx, .xls, .csv" 
+              className="hidden" 
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 font-medium rounded-md hover:bg-blue-100 transition-colors shadow-sm"
+            >
+              <Upload size={18} />
+              Upload Excel
+            </button>
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium rounded-md hover:bg-emerald-100 transition-colors shadow-sm"
+            >
+              <Download size={18} />
+              Download Template
+            </button>
             <button
               onClick={handleAddRow}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors shadow-sm"

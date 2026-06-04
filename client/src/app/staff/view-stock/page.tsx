@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, FilterX, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, Search, FilterX, Edit2, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { api } from "@/lib/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToasts } from "@/components/toast";
@@ -37,8 +37,27 @@ export default function ViewStockPage() {
   const [editFormData, setEditFormData] = useState<Partial<StockEntry>>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+  
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig?.key !== columnKey) return <ArrowUpDown size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp size={14} className="text-indigo-600 ml-1" />;
+    return <ArrowDown size={14} className="text-indigo-600 ml-1" />;
+  };
+
   // Filters
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterInv, setFilterInv] = useState("");
   const [filterInvNo, setFilterInvNo] = useState("");
   const [filterGrade, setFilterGrade] = useState("");
 
@@ -57,26 +76,49 @@ export default function ViewStockPage() {
   }, []);
 
   const filteredStock = useMemo(() => {
-    return stockData.filter((item) => {
-      // Filter Date (DOP)
-      if (filterDate) {
-        const itemDate = item.dop ? new Date(item.dop).toISOString().split('T')[0] : "";
-        if (itemDate !== filterDate) return false;
+    let result = stockData.filter((item) => {
+      // Filter DOP Range
+      if (filterDateFrom || filterDateTo) {
+        const itemDateStr = item.dop ? new Date(item.dop).toISOString().split('T')[0] : "";
+        if (!itemDateStr) return false;
+        if (filterDateFrom && itemDateStr < filterDateFrom) return false;
+        if (filterDateTo && itemDateStr > filterDateTo) return false;
       }
+      // Filter Inv
+      if (filterInv && (!item.inv || item.inv.toLowerCase().indexOf(filterInv.toLowerCase()) === -1)) return false;
       // Filter InvNo
-      if (filterInvNo) {
-        if (item.invNo?.toString() !== filterInvNo) return false;
-      }
+      if (filterInvNo && item.invNo?.toString() !== filterInvNo) return false;
       // Filter Grade
-      if (filterGrade) {
-        if (item.grade !== filterGrade) return false;
-      }
+      if (filterGrade && item.grade !== filterGrade) return false;
+      
       return true;
     });
-  }, [stockData, filterDate, filterInvNo, filterGrade]);
+
+    if (sortConfig !== null) {
+      result.sort((a, b) => {
+        let aValue: any = a[sortConfig.key as keyof StockEntry];
+        let bValue: any = b[sortConfig.key as keyof StockEntry];
+
+        if (aValue === null || aValue === undefined) aValue = "";
+        if (bValue === null || bValue === undefined) bValue = "";
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return result;
+  }, [stockData, filterDateFrom, filterDateTo, filterInv, filterInvNo, filterGrade, sortConfig]);
 
   const clearFilters = () => {
-    setFilterDate("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setFilterInv("");
     setFilterInvNo("");
     setFilterGrade("");
   };
@@ -151,13 +193,36 @@ export default function ViewStockPage() {
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date (DOP)</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm"
-              />
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date (DOP) Range</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
+                />
+                <span className="text-gray-400">-</span>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Inv Mark</label>
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search Inv"
+                  value={filterInv}
+                  onChange={(e) => setFilterInv(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 w-28 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm"
+                />
+              </div>
             </div>
             
             <div className="flex flex-col">
@@ -207,15 +272,28 @@ export default function ViewStockPage() {
               <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 uppercase text-xs tracking-wider">
                 <tr>
                   <th className="px-4 py-3 w-12 text-center">#</th>
-                  <th className="px-4 py-3">INV</th>
-                  <th className="px-4 py-3">INV NO</th>
-                  <th className="px-4 py-3">GRADE</th>
-                  <th className="px-4 py-3 text-right">BAGS</th>
-                  <th className="px-4 py-3 text-right">BAG WT (kg)</th>
-                  <th className="px-4 py-3 text-right">NET WT (kg)</th>
-                  <th className="px-4 py-3 text-center">DOP</th>
-                  <th className="px-4 py-3 text-center">AUCTION</th>
-                  <th className="px-4 py-3 text-center">USER</th>
+                  {[
+                    { key: 'inv', label: 'INV' },
+                    { key: 'invNo', label: 'INV NO' },
+                    { key: 'grade', label: 'GRADE' },
+                    { key: 'totalBags', label: 'BAGS', align: 'right' },
+                    { key: 'bagWt', label: 'BAG WT (kg)', align: 'right' },
+                    { key: 'netWt', label: 'NET WT (kg)', align: 'right' },
+                    { key: 'dop', label: 'DOP', align: 'center' },
+                    { key: 'auction', label: 'AUCTION', align: 'center' },
+                    { key: 'user', label: 'USER', align: 'center' }
+                  ].map(col => (
+                    <th 
+                      key={col.key}
+                      className={`px-4 py-3 cursor-pointer select-none group hover:bg-gray-200 transition-colors ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : ''} whitespace-nowrap`}
+                      onClick={() => handleSort(col.key)}
+                    >
+                      <div className={`flex items-center gap-1 ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : ''}`}>
+                        {col.label}
+                        <SortIcon columnKey={col.key} />
+                      </div>
+                    </th>
+                  ))}
                   <th className="px-4 py-3 text-center w-24">ACTIONS</th>
                 </tr>
               </thead>
