@@ -24,6 +24,7 @@ interface StockEntry {
   dop: string | null;
   user: string | null;
   auction: boolean | null;
+  soldRate: number | null;
 }
 
 export default function ViewStockPage() {
@@ -354,6 +355,13 @@ export default function ViewStockPage() {
                                   <X size={16} />
                                 </button>
                               </div>
+                            ) : row.soldRate !== null ? (
+                              <span 
+                                className="text-xs text-gray-500 font-medium whitespace-nowrap bg-gray-100 px-2 py-1 rounded border border-gray-200 cursor-not-allowed"
+                                title="Cannot edit a sold item"
+                              >
+                                Sold
+                              </span>
                             ) : (
                               <button
                                 onClick={() => startEditing(row)}
