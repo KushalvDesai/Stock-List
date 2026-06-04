@@ -18,7 +18,8 @@ initLogger();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: 'http://localhost:3001', credentials: true }));
+const allowedOrigins = ['http://localhost:3001', process.env.FRONTEND_URL].filter(Boolean) as string[];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(compression());
