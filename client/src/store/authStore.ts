@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>()(
         // Save token to cookies so Next.js middleware can read it
         if (typeof window !== 'undefined') {
           const maxAge = (user.role === 'owner' && isMobile) ? 8640000 : 86400; // 100 days vs 1 day
-          document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+          document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
         }
         set({ user, token });
       },
