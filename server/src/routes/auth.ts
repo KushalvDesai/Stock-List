@@ -119,8 +119,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const isMobile = req.body.isMobile === true;
+    const tokenExpiresIn = (user.role === 'owner' && isMobile) ? '100d' : '1d';
+
     const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: '1d',
+      expiresIn: tokenExpiresIn,
     });
 
     res.status(200).json({

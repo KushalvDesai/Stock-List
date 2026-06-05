@@ -14,18 +14,18 @@ export default function LoginPage() {
   const handleLogin = async (data: any) => {
     setError(null);
     try {
-      const response = await api.post("/auth/login", data);
+      const isMobile = typeof window !== 'undefined' && 
+          (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850);
+          
+      const response = await api.post("/auth/login", { ...data, isMobile });
       const { user, token } = response.data;
 
-      setAuth(user, token);
+      setAuth(user, token, isMobile);
 
       // Redirect based on role or to dashboard
       if (user.role === "admin") {
         router.push("/admin");
       } else if (user.role === "owner") {
-        const isMobile = typeof window !== 'undefined' && 
-          (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850);
-        
         if (isMobile) {
           router.push("/owner-mobile");
         } else {
