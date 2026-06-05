@@ -23,7 +23,14 @@ export default function LoginPage() {
       if (user.role === "admin") {
         router.push("/admin");
       } else if (user.role === "owner") {
-        router.push("/owner");
+        const isMobile = typeof window !== 'undefined' && 
+          (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850);
+        
+        if (isMobile) {
+          router.push("/owner-mobile");
+        } else {
+          router.push("/owner");
+        }
       } else {
         router.push("/staff");
       }

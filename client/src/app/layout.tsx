@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "StockList",
   description: "Inventory Management System",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
