@@ -2,6 +2,7 @@
 import { Router, Response } from 'express';
 import { prisma } from '../prisma';
 import { authenticate, AuthRequest, authorize } from '../middleware/authMiddleware';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 
@@ -25,7 +26,6 @@ router.get('/my-factory', authenticate, authorize(['staff']), async (req: AuthRe
       return;
     }
 
-    // Return the array of factories
     res.status(200).json(user.factories);
   } catch (error) {
     console.error('Error fetching user factory:', error);
@@ -33,10 +33,21 @@ router.get('/my-factory', authenticate, authorize(['staff']), async (req: AuthRe
   }
 });
 
-// Get all companies with their factories and marks
-router.get('/', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response) => {
+// Get companies (isolated to owner)
+router.get('/', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    let whereClause = {};
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(200).json([]);
+        return;
+      }
+      whereClause = { id: dbUser.companyId };
+    }
+
     const companies = await prisma.company.findMany({
+      where: whereClause,
       include: {
         factories: {
           include: {
@@ -61,6 +72,15 @@ router.post('/', authenticate, authorize(['owner', 'admin']), async (req: AuthRe
       return;
     }
     const company = await prisma.company.create({ data: { name } });
+
+    // Instantly link the owner to their newly created company
+    if (req.user?.role === 'owner') {
+      await prisma.user.update({
+        where: { id: req.user.userId },
+        data: { companyId: company.id }
+      });
+    }
+
     res.status(201).json(company);
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -80,7 +100,17 @@ router.post('/factory', authenticate, authorize(['owner', 'admin']), async (req:
       res.status(400).json({ message: 'Factory name and companyId are required' });
       return;
     }
-    const factory = await prisma.factory.create({ data: { name, companyId } });
+    let targetCompanyId = companyId;
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(403).json({ message: 'You must create a company first.' });
+        return;
+      }
+      targetCompanyId = dbUser.companyId; // Force it to their company, ignoring the body payload
+    }
+
+    const factory = await prisma.factory.create({ data: { name, companyId: targetCompanyId } });
     res.status(201).json(factory);
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -100,6 +130,15 @@ router.post('/mark', authenticate, authorize(['owner', 'admin']), async (req: Au
       res.status(400).json({ message: 'Mark name and factoryId are required' });
       return;
     }
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const factory = await prisma.factory.findUnique({ where: { id: factoryId } });
+      if (!factory || factory.companyId !== dbUser?.companyId) {
+        res.status(403).json({ message: 'Unauthorized: You do not own this factory' });
+        return;
+      }
+    }
+
     const mark = await prisma.mark.create({ data: { name, factoryId } });
     res.status(201).json(mark);
   } catch (error) {
@@ -108,11 +147,22 @@ router.post('/mark', authenticate, authorize(['owner', 'admin']), async (req: Au
   }
 });
 
-// Get staff list
-router.get('/staff', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response) => {
+// Get staff list (isolated to owner's company)
+router.get('/staff', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    let whereClause: any = { role: 'staff' };
+    
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(200).json([]);
+        return;
+      }
+      whereClause.companyId = dbUser.companyId;
+    }
+
     const staff = await prisma.user.findMany({
-      where: { role: 'staff' },
+      where: whereClause,
       select: {
         id: true,
         username: true,
@@ -128,12 +178,74 @@ router.get('/staff', authenticate, authorize(['owner', 'admin']), async (req: Au
   }
 });
 
+// Owner creates new staff
+router.post('/staff', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      res.status(400).json({ message: 'Username and password are required' });
+      return;
+    }
+
+    let companyIdToAssign = undefined;
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(400).json({ message: 'You must create a company first before adding staff.' });
+        return;
+      }
+      companyIdToAssign = dbUser.companyId;
+    } else if (req.user?.role === 'admin') {
+      companyIdToAssign = req.body.companyId;
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { username } });
+    if (existingUser) {
+      res.status(400).json({ message: 'Username already exists' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+        role: 'staff',
+        companyId: companyIdToAssign
+      }
+    });
+    
+    res.status(201).json({ message: 'Staff created successfully', userId: user.id });
+  } catch (error) {
+    console.error('Error creating staff:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Update staff factory assignment
 router.put('/staff/:id/factories', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const { factoryIds } = req.body; // Expect an array of factory IDs
+    const { factoryIds } = req.body; 
 
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      
+      const staffMember = await prisma.user.findUnique({ where: { id } });
+      if (!staffMember || staffMember.companyId !== dbUser?.companyId) {
+        res.status(403).json({ message: 'Unauthorized: Staff member does not belong to your company' });
+        return;
+      }
+
+      if (factoryIds && factoryIds.length > 0) {
+        const factories = await prisma.factory.findMany({ where: { id: { in: factoryIds } } });
+        const allMatch = factories.every(f => f.companyId === dbUser?.companyId);
+        if (!allMatch || factories.length !== factoryIds.length) {
+          res.status(403).json({ message: 'Unauthorized: One or more factories do not belong to your company' });
+          return;
+        }
+      }
+    }
     const user = await prisma.user.update({
       where: { id },
       data: {

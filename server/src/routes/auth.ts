@@ -82,7 +82,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       data: {
         username,
         password: hashedPassword,
-        role: 'staff', // Force staff role for new users
+        role: 'owner', // Force owner role for public signups
       },
     });
 

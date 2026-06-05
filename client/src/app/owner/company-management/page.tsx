@@ -30,6 +30,8 @@ export default function CompanyManagement() {
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [newMarkName, setNewMarkName] = useState("");
   const [selectedFactoryId, setSelectedFactoryId] = useState("");
+  const [newStaffUsername, setNewStaffUsername] = useState("");
+  const [newStaffPassword, setNewStaffPassword] = useState("");
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -99,6 +101,27 @@ export default function CompanyManagement() {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to assign staff");
     }
+  };
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaffUsername || !newStaffPassword) return;
+    try {
+      await api.post("/company/staff", { username: newStaffUsername, password: newStaffPassword });
+      toast.success("Staff created successfully!");
+      setNewStaffUsername("");
+      setNewStaffPassword("");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to create staff");
+    }
+  };
+
+  const generateRandomPassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let pwd = "";
+    for (let i = 0; i < 10; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    setNewStaffPassword(pwd);
   };
 
   const allFactories = companies.flatMap(c => c.factories);
@@ -255,8 +278,37 @@ export default function CompanyManagement() {
 
           {/* Right Column: Staff Management */}
           <div className="bg-slate-50 rounded-none shadow-none border border-slate-300 p-6 lg:col-span-1">
-             <h2 className="text-lg font-bold flex items-center gap-2 mb-6 border-b pb-2"><Users size={20} className="text-indigo-500" /> Staff Assignment</h2>
+             <h2 className="text-lg font-bold flex items-center gap-2 mb-6 border-b pb-2"><Users size={20} className="text-indigo-500" /> Staff Management</h2>
              
+             {/* Create Staff */}
+             <div className="mb-6 p-4 border border-slate-300 bg-white">
+               <h3 className="text-sm font-bold mb-3">Create New Staff</h3>
+               <form onSubmit={handleCreateStaff} className="space-y-3">
+                 <input 
+                   type="text" 
+                   value={newStaffUsername} 
+                   onChange={(e) => setNewStaffUsername(e.target.value)}
+                   placeholder="Staff Username"
+                   className="w-full px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                 />
+                 <div className="flex gap-2">
+                   <input 
+                     type="text" 
+                     value={newStaffPassword} 
+                     onChange={(e) => setNewStaffPassword(e.target.value)}
+                     placeholder="Password"
+                     className="flex-1 px-3 py-2 border border-gray-300 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                   />
+                   <button type="button" onClick={generateRandomPassword} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-none text-xs font-medium transition-colors" title="Generate Random Password">
+                     Gen
+                   </button>
+                 </div>
+                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-none text-sm font-medium transition-colors">
+                   Create Staff Account
+                 </button>
+               </form>
+             </div>
+
              <div className="space-y-3">
                {staff.map(user => (
                  <div key={user.id} className="p-4 border border-gray-100 rounded-none bg-slate-100 flex flex-col gap-3">

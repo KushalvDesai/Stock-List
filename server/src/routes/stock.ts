@@ -7,7 +7,22 @@ const router = Router();
 // Endpoint for staff, owner, and admin to fetch stock data
 router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    let whereClause = {};
+    if (req.user?.role !== 'admin') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(200).json([]);
+        return;
+      }
+      whereClause = {
+        factory: {
+          companyId: dbUser.companyId
+        }
+      };
+    }
+
     const stock = await prisma.stock.findMany({
+      where: whereClause,
       include: { factory: true, mark: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -63,8 +78,23 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
 // Endpoint for owner/admin to fetch pending edit requests
 router.get('/edit-requests/pending', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    let whereClause: any = { status: 'pending' };
+    
+    if (req.user?.role !== 'admin') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(200).json([]);
+        return;
+      }
+      whereClause.stock = {
+        factory: {
+          companyId: dbUser.companyId
+        }
+      };
+    }
+
     const requests = await prisma.stockEditRequest.findMany({
-      where: { status: 'pending' },
+      where: whereClause,
       include: { stock: true },
       orderBy: { createdAt: 'desc' },
     });
