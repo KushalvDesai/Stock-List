@@ -16,6 +16,7 @@ import { telemetryMiddleware } from './utils/telemetry';
 initLogger();
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
