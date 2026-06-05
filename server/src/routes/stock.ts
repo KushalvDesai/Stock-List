@@ -7,17 +7,15 @@ const router = Router();
 // Endpoint for staff, owner, and admin to fetch stock data
 router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    let whereClause = {};
+    let whereClause: any = { isDeleted: false };
     if (req.user?.role !== 'admin') {
       const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
       if (!dbUser || !dbUser.companyId) {
         res.status(200).json([]);
         return;
       }
-      whereClause = {
-        factory: {
-          companyId: dbUser.companyId
-        }
+      whereClause.factory = {
+        companyId: dbUser.companyId
       };
     }
 
@@ -270,18 +268,134 @@ router.delete('/:id', authenticate, authorize(['owner', 'admin']), async (req: A
   try {
     const id = req.params.id as string;
 
-    const stock = await prisma.stock.findUnique({ where: { id } });
+    const stock = await prisma.stock.findUnique({ where: { id }, include: { factory: true } });
     if (!stock) {
       res.status(404).json({ message: 'Stock entry not found' });
       return;
     }
 
-    await prisma.stock.delete({ where: { id } });
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (stock.factory?.companyId !== dbUser?.companyId) {
+        res.status(403).json({ message: 'Unauthorized: Cannot delete this stock' });
+        return;
+      }
+    }
 
-    res.status(200).json({ message: 'Stock entry deleted successfully' });
+    // Soft delete
+    await prisma.stock.update({ 
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() }
+    });
+
+    res.status(200).json({ message: 'Stock entry moved to recycle bin' });
   } catch (error) {
     console.error('Error deleting stock data:', error);
     res.status(500).json({ message: 'Internal server error while deleting stock data' });
+  }
+});
+
+// Batch Delete Stock (Soft Delete)
+router.post('/delete-batch', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ message: 'No items selected' });
+      return;
+    }
+
+    let companyId: string | null | undefined = null;
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      companyId = dbUser?.companyId;
+      if (!companyId) {
+        res.status(403).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      // Verify ownership of all stocks
+      const stocks = await prisma.stock.findMany({
+        where: { id: { in: ids } },
+        include: { factory: true }
+      });
+      const allOwned = stocks.every(s => s.factory?.companyId === companyId);
+      if (!allOwned) {
+        res.status(403).json({ message: 'Unauthorized: You do not own some of the selected items' });
+        return;
+      }
+    }
+
+    await prisma.stock.updateMany({
+      where: { id: { in: ids } },
+      data: { isDeleted: true, deletedAt: new Date() }
+    });
+
+    res.status(200).json({ message: 'Items moved to recycle bin successfully' });
+  } catch (error) {
+    console.error('Error batch deleting stock:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get Recycle Bin
+router.get('/recycle-bin', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    let whereClause: any = { isDeleted: true };
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (!dbUser || !dbUser.companyId) {
+        res.status(200).json([]);
+        return;
+      }
+      whereClause.factory = { companyId: dbUser.companyId };
+    }
+
+    const deletedItems = await prisma.stock.findMany({
+      where: whereClause,
+      include: { factory: true, mark: true },
+      orderBy: { deletedAt: 'desc' },
+    });
+    res.status(200).json(deletedItems);
+  } catch (error) {
+    console.error('Error fetching recycle bin:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Batch Recover from Recycle Bin
+router.post('/recover-batch', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ message: 'No items selected' });
+      return;
+    }
+
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const companyId = dbUser?.companyId;
+
+      // Verify ownership
+      const stocks = await prisma.stock.findMany({
+        where: { id: { in: ids } },
+        include: { factory: true }
+      });
+      const allOwned = stocks.every(s => s.factory?.companyId === companyId);
+      if (!allOwned) {
+        res.status(403).json({ message: 'Unauthorized: You do not own some of the selected items' });
+        return;
+      }
+    }
+
+    await prisma.stock.updateMany({
+      where: { id: { in: ids } },
+      data: { isDeleted: false, deletedAt: null }
+    });
+
+    res.status(200).json({ message: 'Items recovered successfully' });
+  } catch (error) {
+    console.error('Error recovering stock:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

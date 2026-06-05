@@ -124,6 +124,32 @@ export default function CompanyManagement() {
     setNewStaffPassword(pwd);
   };
 
+  const handleDeleteStaff = async (staffId: string) => {
+    if (!confirm("Are you sure you want to delete this staff member?")) return;
+    try {
+      await api.delete(`/company/staff/${staffId}`);
+      toast.success("Staff deleted successfully!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete staff");
+    }
+  };
+
+  const handleResetPassword = async (staffId: string) => {
+    const newPwd = prompt("Enter new password for this staff member (min 5 chars):");
+    if (!newPwd) return;
+    if (newPwd.length < 5) {
+      toast.error("Password must be at least 5 characters long");
+      return;
+    }
+    try {
+      await api.put(`/company/staff/${staffId}/password`, { newPassword: newPwd });
+      toast.success("Password updated successfully!");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update password");
+    }
+  };
+
   const allFactories = companies.flatMap(c => c.factories);
 
   if (isLoading) {
@@ -313,12 +339,20 @@ export default function CompanyManagement() {
                {staff.map(user => (
                  <div key={user.id} className="p-4 border border-gray-100 rounded-none bg-slate-100 flex flex-col gap-3">
                    <div className="flex justify-between items-center">
-                     <span className="font-medium text-slate-700">{user.username}</span>
-                     {user.factories && user.factories.length > 0 ? (
-                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-100 text-green-800 rounded-none">Assigned ({user.factories.length})</span>
-                     ) : (
-                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-yellow-100 text-yellow-800 rounded-none">Unassigned</span>
-                     )}
+                     <div className="flex items-center gap-3">
+                       <span className="font-medium text-slate-700">{user.username}</span>
+                       <button onClick={() => handleResetPassword(user.id)} className="text-xs text-indigo-600 hover:text-indigo-800 underline">Reset Password</button>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       {user.factories && user.factories.length > 0 ? (
+                         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-100 text-green-800 rounded-none">Assigned ({user.factories.length})</span>
+                       ) : (
+                         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-yellow-100 text-yellow-800 rounded-none">Unassigned</span>
+                       )}
+                       <button onClick={() => handleDeleteStaff(user.id)} className="text-red-500 hover:text-red-700" title="Delete Staff">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                       </button>
+                     </div>
                    </div>
                    
                    <div className="bg-slate-50 border border-slate-300 rounded-none p-3 max-h-40 overflow-y-auto space-y-2">

@@ -95,6 +95,24 @@ router.post('/users/:id/role', authenticate, authorize(['admin']), async (req: A
   }
 });
 
+router.delete('/users/:id', authenticate, authorize(['admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    
+    // Prevent self-deletion if desired
+    if (id === req.user?.userId) {
+      res.status(400).json({ message: 'Cannot delete your own account' });
+      return;
+    }
+
+    await prisma.user.delete({ where: { id } });
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 router.get('/logs', authenticate, authorize(['admin']), (req: AuthRequest, res: Response) => {
   res.status(200).json({ 
     server: serverLogs.join(''), 

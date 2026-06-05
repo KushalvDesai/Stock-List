@@ -49,4 +49,25 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.error('❌ Failed to connect to the database:', error);
   }
+
+  // Background cleanup task for Recycle Bin (runs every 12 hours)
+  setInterval(async () => {
+    try {
+      const tenDaysAgo = new Date();
+      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+      const result = await prisma.stock.deleteMany({
+        where: {
+          isDeleted: true,
+          deletedAt: {
+            lt: tenDaysAgo
+          }
+        }
+      });
+      if (result.count > 0) {
+        console.log(`[Cleanup] Emptied ${result.count} old items from recycle bin.`);
+      }
+    } catch (error) {
+      console.error('Error in recycle bin cleanup task:', error);
+    }
+  }, 1000 * 60 * 60 * 12);
 });

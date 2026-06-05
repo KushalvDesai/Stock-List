@@ -123,6 +123,8 @@ model Stock {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   editRequests       StockEditRequest[]
+  isDeleted          Boolean   @default(false)
+  deletedAt          DateTime?
 }
 
 model StockEditRequest {

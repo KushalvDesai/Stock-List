@@ -261,4 +261,59 @@ router.put('/staff/:id/factories', authenticate, authorize(['owner', 'admin']), 
   }
 });
 
+// Update staff password
+router.put('/staff/:id/password', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 5) {
+      res.status(400).json({ message: 'Password must be at least 5 characters long' });
+      return;
+    }
+
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const staffMember = await prisma.user.findUnique({ where: { id } });
+      if (!staffMember || staffMember.companyId !== dbUser?.companyId || staffMember.role !== 'staff') {
+        res.status(403).json({ message: 'Unauthorized: Cannot modify this user' });
+        return;
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword }
+    });
+
+    res.status(200).json({ message: 'Staff password updated successfully' });
+  } catch (error) {
+    console.error('Error updating staff password:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete staff
+router.delete('/staff/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const staffMember = await prisma.user.findUnique({ where: { id } });
+      if (!staffMember || staffMember.companyId !== dbUser?.companyId || staffMember.role !== 'staff') {
+        res.status(403).json({ message: 'Unauthorized: Cannot delete this user' });
+        return;
+      }
+    }
+
+    await prisma.user.delete({ where: { id } });
+    res.status(200).json({ message: 'Staff member deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting staff:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;
