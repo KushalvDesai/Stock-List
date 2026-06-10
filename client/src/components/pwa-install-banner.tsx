@@ -6,6 +6,7 @@ import { Download, Share, PlusSquare } from "lucide-react";
 export function PwaInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [isSamsung, setIsSamsung] = useState(false);
   const [isStandalone, setIsStandalone] = useState(true); // default true to avoid hydration flicker
   const [isAppInstalled, setIsAppInstalled] = useState(false);
 
@@ -19,6 +20,10 @@ export function PwaInstallBanner() {
     const iOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent.toLowerCase()) 
              && !(window as any).MSStream;
     setIsIOS(iOS);
+
+    // Detect Samsung Internet (which doesn't consistently fire beforeinstallprompt)
+    const isSamsungBrowser = /SamsungBrowser/i.test(window.navigator.userAgent);
+    setIsSamsung(isSamsungBrowser);
 
     // Listen for the install prompt on Android/Chrome
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -81,6 +86,23 @@ export function PwaInstallBanner() {
           <span className="text-gray-500 mt-1">
             Tap <Share size={14} className="inline mx-1" /> then<br/>
             <PlusSquare size={14} className="inline mx-1" /> <strong>Add to Home Screen</strong>
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Samsung Internet fallback instruction
+  if (isSamsung && !deferredPrompt) {
+    return (
+      <div className="fixed bottom-[80px] left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-[400px] z-50 bg-white/90 backdrop-blur-md border border-gray-200 text-gray-800 p-4 rounded-2xl shadow-xl flex items-start gap-3 animate-in slide-in-from-bottom-5">
+        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600">
+          <Download size={20} />
+        </div>
+        <div className="flex flex-col text-sm">
+          <span className="font-bold">Install the App</span>
+          <span className="text-gray-500 mt-1">
+            Tap the <strong>Download icon</strong> in the URL bar, or tap Menu (≡) and select <strong>Add to Home screen</strong>.
           </span>
         </div>
       </div>
