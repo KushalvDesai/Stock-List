@@ -105,12 +105,24 @@ export default function OwnerInventoryPage() {
     return <ArrowDown size={14} className="text-indigo-600 ml-1" />;
   };
 
-  // Filters
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [filterInv, setFilterInv] = useState("");
-  const [filterInvNo, setFilterInvNo] = useState("");
-  const [filterGrade, setFilterGrade] = useState("");
+  // Search & Filter State
+  const SEARCH_FIELDS = [
+    { key: 'mark', label: 'Mark', type: 'text' },
+    { key: 'grade', label: 'Grade', type: 'select' },
+    { key: 'broker', label: 'Broker', type: 'text' },
+    { key: 'buyer', label: 'Buyer', type: 'text' },
+    { key: 'dop', label: 'Date of Purchase (DOP)', type: 'date' },
+    { key: 'soldDate', label: 'Sold Date', type: 'date' },
+    { key: 'auctionDate', label: 'Auction Date', type: 'date' },
+    { key: 'purchaseSampleDate', label: 'Purchase Sample Date', type: 'date' },
+  ];
+
+  const [filterFactory, setFilterFactory] = useState("");
+  const [filterInvCombined, setFilterInvCombined] = useState("");
+  const [searchField, setSearchField] = useState("grade");
+  const [searchValue, setSearchValue] = useState("");
+  const [searchDateFrom, setSearchDateFrom] = useState("");
+  const [searchDateTo, setSearchDateTo] = useState("");
 
   // Delete & Recycle Bin State
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -137,19 +149,40 @@ export default function OwnerInventoryPage() {
 
   const filteredStock = useMemo(() => {
     let result = stockData.filter((item) => {
-      // Filter DOP Range
-      if (filterDateFrom || filterDateTo) {
-        const itemDateStr = item.dop ? new Date(item.dop).toISOString().split('T')[0] : "";
-        if (!itemDateStr) return false;
-        if (filterDateFrom && itemDateStr < filterDateFrom) return false;
-        if (filterDateTo && itemDateStr > filterDateTo) return false;
+      // Dedicated Filters
+      if (filterFactory && (!item.factory?.name || !item.factory.name.toLowerCase().includes(filterFactory.toLowerCase()))) return false;
+      if (filterInvCombined) {
+        const textPart = filterInvCombined.replace(/[0-9]/g, '').trim().toLowerCase();
+        const numPart = filterInvCombined.replace(/[^0-9]/g, '').trim();
+        if (textPart && (!item.inv || !item.inv.toLowerCase().includes(textPart))) return false;
+        if (numPart && item.invNo?.toString() !== numPart) return false;
       }
-      // Filter Inv
-      if (filterInv && (!item.inv || item.inv.toLowerCase().indexOf(filterInv.toLowerCase()) === -1)) return false;
-      // Filter InvNo
-      if (filterInvNo && item.invNo?.toString() !== filterInvNo) return false;
-      // Filter Grade
-      if (filterGrade && item.grade !== filterGrade) return false;
+
+      const fieldDef = SEARCH_FIELDS.find(f => f.key === searchField);
+      if (!fieldDef) return true;
+
+      if (fieldDef.type === 'date') {
+        if (!searchDateFrom && !searchDateTo) return true;
+        let itemDate: string | null | undefined = null;
+        if (searchField === 'dop') itemDate = item.dop;
+        if (searchField === 'soldDate') itemDate = item.soldDate;
+        if (searchField === 'auctionDate') itemDate = item.auctionDate;
+        if (searchField === 'purchaseSampleDate') itemDate = item.purchaseSampleDate;
+        
+        if (!itemDate) return false;
+        const itemDateStr = new Date(itemDate).toISOString().split('T')[0];
+        if (searchDateFrom && itemDateStr < searchDateFrom) return false;
+        if (searchDateTo && itemDateStr > searchDateTo) return false;
+        return true;
+      }
+
+      if (!searchValue) return true;
+      const term = searchValue.toLowerCase();
+
+      if (searchField === 'mark') return !!item.mark?.name && item.mark.name.toLowerCase().includes(term);
+      if (searchField === 'grade') return item.grade === searchValue;
+      if (searchField === 'broker') return !!item.broker && item.broker.toLowerCase().includes(term);
+      if (searchField === 'buyer') return !!item.buyer && item.buyer.toLowerCase().includes(term);
       
       return true;
     });
@@ -181,14 +214,14 @@ export default function OwnerInventoryPage() {
     }
 
     return result;
-  }, [stockData, filterDateFrom, filterDateTo, filterInv, filterInvNo, filterGrade, sortConfig]);
+  }, [stockData, searchField, searchValue, searchDateFrom, searchDateTo, filterFactory, filterInvCombined, sortConfig]);
 
   const clearFilters = () => {
-    setFilterDateFrom("");
-    setFilterDateTo("");
-    setFilterInv("");
-    setFilterInvNo("");
-    setFilterGrade("");
+    setSearchValue("");
+    setSearchDateFrom("");
+    setSearchDateTo("");
+    setFilterFactory("");
+    setFilterInvCombined("");
   };
 
   // Export State & Logic
@@ -354,132 +387,158 @@ export default function OwnerInventoryPage() {
         </header>
 
         <div className="w-full max-w-[1600px] mx-auto px-8 lg:px-12 pt-8 space-y-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-slate-50 shadow-none px-6 py-4 rounded-none border border-slate-300 gap-4">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Browse and search the entire stock inventory.</p>
+          <div className="flex items-end mb-6 bg-slate-50 shadow-none px-6 py-4 rounded-none border border-slate-300 gap-4 overflow-x-auto whitespace-nowrap">
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Factory</label>
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="e.g. ABC Factory"
+                  value={filterFactory}
+                  onChange={(e) => setFilterFactory(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 w-36 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm placeholder:normal-case"
+                />
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Inv</label>
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="e.g. MK123"
+                  value={filterInvCombined}
+                  onChange={(e) => setFilterInvCombined(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 w-32 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm uppercase placeholder:normal-case"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Field</label>
+              <select
+                value={searchField}
+                onChange={(e) => {
+                  setSearchField(e.target.value);
+                  clearFilters(); // Clear value when switching fields
+                }}
+                className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm cursor-pointer min-w-[150px]"
+              >
+                {SEARCH_FIELDS.map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {SEARCH_FIELDS.find(f => f.key === searchField)?.type === 'date' ? (
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date (DOP) Range</label>
+                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date Range</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
-                    value={filterDateFrom}
-                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    value={searchDateFrom}
+                    onChange={(e) => setSearchDateFrom(e.target.value)}
                     className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm w-[130px]"
                   />
                   <span className="text-gray-400">-</span>
                   <input
                     type="date"
-                    value={filterDateTo}
-                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    value={searchDateTo}
+                    onChange={(e) => setSearchDateTo(e.target.value)}
                     className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm w-[130px]"
                   />
                 </div>
               </div>
-
+            ) : SEARCH_FIELDS.find(f => f.key === searchField)?.type === 'select' ? (
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Inv Mark</label>
-                <div className="relative">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search Inv"
-                    value={filterInv}
-                    onChange={(e) => setFilterInv(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 w-28 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Inv No</label>
-                <div className="relative">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="number"
-                    placeholder="Search Inv No"
-                    value={filterInvNo}
-                    onChange={(e) => setFilterInvNo(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 w-32 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Grade</label>
+                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Select Value</label>
                 <select
-                  value={filterGrade}
-                  onChange={(e) => setFilterGrade(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm cursor-pointer"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm cursor-pointer min-w-[150px]"
                 >
-                  <option value="">All Grades</option>
+                  <option value="">Any</option>
                   {GRADES.map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
                 </select>
               </div>
+            ) : (
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Value</label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Enter search term..."
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 w-48 bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-none outline-none transition-colors text-sm placeholder:normal-case"
+                  />
+                </div>
+              </div>
+            )}
 
-              <div className="flex flex-col justify-end h-full mt-5 gap-2 flex-row">
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-none transition-colors text-sm font-medium h-fit"
-                  title="Clear all filters"
-                >
-                  <FilterX size={16} />
-                  Clear
-                </button>
-                <button
-                  onClick={handleExport}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 rounded-none transition-colors text-sm font-medium h-fit"
-                  title="Export selected columns to Excel"
-                >
-                  <Download size={16} />
-                  Export
-                </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-none transition-colors text-sm font-medium h-[34px]"
+                title="Clear all filters"
+              >
+                <FilterX size={16} />
+                Clear
+              </button>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 rounded-none transition-colors text-sm font-medium h-[34px]"
+                title="Export selected columns to Excel"
+              >
+                <Download size={16} />
+                Export
+              </button>
+              <button
+                onClick={() => {
+                  setIsRecycleBin(!isRecycleBin);
+                  setIsDeleteMode(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-none transition-colors text-sm font-medium h-[34px] ${isRecycleBin ? 'bg-indigo-600 text-white border-indigo-600' : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'}`}
+              >
+                <RefreshCw size={16} />
+                {isRecycleBin ? "Exit Recycle Bin" : "Recycle Bin"}
+              </button>
+
+              {!isRecycleBin && (
                 <button
                   onClick={() => {
-                    setIsRecycleBin(!isRecycleBin);
-                    setIsDeleteMode(false);
+                    setIsDeleteMode(!isDeleteMode);
+                    if (isDeleteMode) setSelectedIds([]);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-none transition-colors text-sm font-medium h-fit ${isRecycleBin ? 'bg-indigo-600 text-white border-indigo-600' : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-none transition-colors text-sm font-medium h-[34px] ${isDeleteMode ? 'bg-slate-200 text-slate-700' : 'text-red-600 border-red-200 hover:bg-red-50'}`}
                 >
-                  <RefreshCw size={16} />
-                  {isRecycleBin ? "Exit Recycle Bin" : "Recycle Bin"}
+                  <Trash2 size={16} />
+                  {isDeleteMode ? "Cancel" : "Delete Items"}
                 </button>
+              )}
 
-                {!isRecycleBin && (
-                  <button
-                    onClick={() => {
-                      setIsDeleteMode(!isDeleteMode);
-                      if (isDeleteMode) setSelectedIds([]);
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-none transition-colors text-sm font-medium h-fit ${isDeleteMode ? 'bg-slate-200 text-slate-700' : 'text-red-600 border-red-200 hover:bg-red-50'}`}
-                  >
-                    <Trash2 size={16} />
-                    {isDeleteMode ? "Cancel" : "Delete Items"}
-                  </button>
-                )}
+              {isDeleteMode && selectedIds.length > 0 && !isRecycleBin && (
+                <button
+                  onClick={handleDeleteSelected}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white border border-transparent rounded-none transition-colors text-sm font-medium h-[34px]"
+                >
+                  Confirm Delete ({selectedIds.length})
+                </button>
+              )}
 
-                {isDeleteMode && selectedIds.length > 0 && !isRecycleBin && (
-                  <button
-                    onClick={handleDeleteSelected}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white border border-transparent rounded-none transition-colors text-sm font-medium h-fit"
-                  >
-                    Confirm Delete ({selectedIds.length})
-                  </button>
-                )}
-
-                {isRecycleBin && selectedIds.length > 0 && (
-                  <button
-                    onClick={handleRecoverSelected}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white border border-transparent rounded-none transition-colors text-sm font-medium h-fit"
-                  >
-                    Recover ({selectedIds.length})
-                  </button>
-                )}
-              </div>
+              {isRecycleBin && selectedIds.length > 0 && (
+                <button
+                  onClick={handleRecoverSelected}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white border border-transparent rounded-none transition-colors text-sm font-medium h-[34px]"
+                >
+                  Recover ({selectedIds.length})
+                </button>
+              )}
             </div>
           </div>
 

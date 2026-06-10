@@ -15,7 +15,12 @@ export default function LoginPage() {
     setError(null);
     try {
       const isMobile = typeof window !== 'undefined' && 
-          (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850);
+          Boolean(
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+            window.innerWidth <= 850 ||
+            window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+            (navigator.maxTouchPoints && navigator.maxTouchPoints > 0 && window.innerWidth <= 1200)
+          );
           
       const response = await api.post("/auth/login", { ...data, isMobile });
       const { user, token } = response.data;

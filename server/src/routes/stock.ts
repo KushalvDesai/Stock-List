@@ -4,6 +4,44 @@ import { authenticate, authorize, AuthRequest } from '../middleware/authMiddlewa
 
 const router = Router();
 
+// Endpoint to check for duplicate stock entry before submission
+router.get('/check-duplicate', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { inv, invNo, grade, markId } = req.query;
+    
+    if (!inv || !invNo || !grade || !markId) {
+      res.status(200).json({ exists: false });
+      return;
+    }
+
+    const mark = await prisma.mark.findUnique({ where: { id: String(markId) } });
+    const factoryId = mark?.factoryId || null;
+
+    const stock = await prisma.stock.findFirst({
+      where: {
+        inv: String(inv),
+        invNo: parseInt(String(invNo), 10),
+        grade: String(grade) as any,
+        markId: String(markId),
+        factoryId: factoryId
+      },
+      include: {
+        mark: true,
+        factory: true
+      }
+    });
+
+    if (stock) {
+      res.status(200).json({ exists: true, stock });
+    } else {
+      res.status(200).json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Error checking duplicate:', error);
+    res.status(500).json({ message: 'Internal server error while checking duplicate' });
+  }
+});
+
 // Endpoint for staff, owner, and admin to fetch stock data
 router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -236,6 +274,7 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
       soldRate: parseFloatSafe(SOLD_RATE),
       billNo: BILL_NO,
       biltyNo: BILTY_NO,
+      transporter: req.body.TRANSPORTER,
       purchaseSample: PURCHASE_SAMPLE as any,
       purchaseSampleDate: parseDate(PURCHASE_SAMPLE_DATE),
       user: currentUser?.username,
@@ -258,9 +297,13 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
       stock: result[0],
       stockMaster: result[1],
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading stock data:', error);
-    res.status(500).json({ message: 'Internal server error while uploading stock data' });
+    if (error.code === 'P2002') {
+      res.status(400).json({ message: 'Duplicate entry: A stock with this Inv, Inv No, Grade, Mark, and Factory already exists.' });
+    } else {
+      res.status(500).json({ message: 'Internal server error while uploading stock data' });
+    }
   }
 });
 
@@ -495,6 +538,7 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
         soldInvNo: updateData.SOLD_INV_NO ? parseInt(updateData.SOLD_INV_NO as string, 10) : undefined,
         billNo: updateData.BILL_NO as string | undefined,
         biltyNo: updateData.BILTY_NO as string | undefined,
+        transporter: updateData.TRANSPORTER as string | undefined,
         purchaseSample: updateData.PURCHASE_SAMPLE as any,
         purchaseSampleDate: updateData.purchaseSampleDate,
         user: currentUser?.username,

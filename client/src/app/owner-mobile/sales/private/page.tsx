@@ -34,15 +34,41 @@ export default function MobilePrivateSalePage() {
   // Bulk Edit Data
   const [globalBroker, setGlobalBroker] = useState("");
   const [globalBuyer, setGlobalBuyer] = useState("");
+  const [globalTransporter, setGlobalTransporter] = useState("");
   const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
+
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      const handleOnline = () => setIsOffline(false);
+      const handleOffline = () => setIsOffline(true);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     const fetchStock = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = localStorage.getItem('offline_inventory');
+        if (cached) setStockData(JSON.parse(cached));
+        setIsLoading(false);
+        return;
+      }
       try {
         const response = await api.get("/stock");
         setStockData(response.data);
+        localStorage.setItem('offline_inventory', JSON.stringify(response.data));
       } catch (error) {
         console.error("Failed to fetch stock:", error);
+        const cached = localStorage.getItem('offline_inventory');
+        if (cached) setStockData(JSON.parse(cached));
       } finally {
         setIsLoading(false);
       }
@@ -75,32 +101,75 @@ export default function MobilePrivateSalePage() {
     setBulkRowData(initialData);
     setGlobalBroker("");
     setGlobalBuyer("");
+    setGlobalTransporter("");
     setIsModalOpen(true);
   };
 
   const submitSale = async () => {
     setIsSubmitting(true);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const pendingSales = JSON.parse(localStorage.getItem('pending_private_sales') || '[]');
+      const offlineId = Date.now().toString();
+      
+      const payload = selectedRowIds.map(id => {
+        const rowInput = bulkRowData[id];
+        return {
+          id,
+          data: {
+            BROKER: globalBroker,
+            BUYER: globalBuyer,
+            TRANSPORTER: globalTransporter,
+            SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
+            SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
+            SOLD_DATE: new Date().toISOString(),
+          }
+        };
+      });
+      
+      pendingSales.push({ syncId: offlineId, payload });
+      localStorage.setItem('pending_private_sales', JSON.stringify(pendingSales));
+      
+      const updatedStockData = stockData.map(item => {
+        if (selectedRowIds.includes(item.id)) {
+           const rowInput = bulkRowData[item.id];
+           return { ...item, soldRate: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : 0, soldDate: new Date().toISOString() };
+        }
+        return item;
+      });
+      
+      setStockData(updatedStockData);
+      localStorage.setItem('offline_inventory', JSON.stringify(updatedStockData));
+
+      toast.success(`Offline: Saved ${selectedRowIds.length} items. Will sync when online.`);
+      setIsModalOpen(false);
+      setSelectedRowIds([]);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const promises = selectedRowIds.map(id => {
         const rowInput = bulkRowData[id];
         return api.put(`/stock/${id}`, {
           BROKER: globalBroker,
           BUYER: globalBuyer,
+          TRANSPORTER: globalTransporter,
           SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
           SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
           SOLD_DATE: new Date().toISOString(),
         });
       });
-      
+
       await Promise.all(promises);
-      
+
       toast.success(`Successfully sold ${selectedRowIds.length} items!`);
       setIsModalOpen(false);
       setSelectedRowIds([]);
-      
+
       // Refresh list
       const response = await api.get("/stock");
       setStockData(response.data);
+      localStorage.setItem('offline_inventory', JSON.stringify(response.data));
     } catch (error) {
       console.error(error);
       toast.error("Failed to process sale.");
@@ -119,7 +188,7 @@ export default function MobilePrivateSalePage() {
           </Link>
           <h2 className="text-lg font-bold text-gray-800">Private Sale</h2>
         </div>
-        
+
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -150,15 +219,13 @@ export default function MobilePrivateSalePage() {
               <div
                 key={item.id}
                 onClick={() => toggleSelection(item.id)}
-                className={`p-4 rounded-2xl border transition-all active:scale-[0.98] cursor-pointer ${
-                  isSelected ? "bg-indigo-50 border-indigo-200 shadow-sm" : "bg-white border-gray-100 shadow-sm"
-                }`}
+                className={`p-4 rounded-2xl border transition-all active:scale-[0.98] cursor-pointer ${isSelected ? "bg-indigo-50 border-indigo-200 shadow-sm" : "bg-white border-gray-100 shadow-sm"
+                  }`}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-gray-300 bg-white"
-                    }`}>
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-gray-300 bg-white"
+                      }`}>
                       {isSelected && <CheckCircle2 size={14} className="stroke-[3]" />}
                     </div>
                     <div>
@@ -221,13 +288,13 @@ export default function MobilePrivateSalePage() {
                   <X size={20} />
                 </button>
               </div>
-              
+
               <div className="overflow-y-auto flex-1 p-6 space-y-6 bg-slate-50">
                 {/* Global Info */}
                 <div className="space-y-4 bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm">
                   <div>
-                    <label className="text-xs font-bold text-indigo-800 uppercase tracking-wider ml-1 mb-1 block">Global Broker</label>
-                    <input 
+                    <label className="text-xs font-bold text-indigo-800 uppercase tracking-wider ml-1 mb-1 block">Broker</label>
+                    <input
                       type="text"
                       value={globalBroker}
                       onChange={(e) => setGlobalBroker(e.target.value)}
@@ -236,13 +303,23 @@ export default function MobilePrivateSalePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-indigo-800 uppercase tracking-wider ml-1 mb-1 block">Global Buyer</label>
-                    <input 
+                    <label className="text-xs font-bold text-indigo-800 uppercase tracking-wider ml-1 mb-1 block">Buyer</label>
+                    <input
                       type="text"
                       value={globalBuyer}
                       onChange={(e) => setGlobalBuyer(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                       placeholder="e.g. Tata Global"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-indigo-800 uppercase tracking-wider ml-1 mb-1 block">Transporter</label>
+                    <input
+                      type="text"
+                      value={globalTransporter}
+                      onChange={(e) => setGlobalTransporter(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                      placeholder="e.g. ABC Logistics"
                     />
                   </div>
                 </div>
@@ -253,18 +330,18 @@ export default function MobilePrivateSalePage() {
                     const item = stockData.find(s => s.id === id);
                     if (!item) return null;
                     const rowData = bulkRowData[id] || { soldRate: "", soldInvNo: "" };
-                    
+
                     return (
                       <div key={id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
                         <div className="flex justify-between border-b border-gray-50 pb-2">
                           <span className="font-bold text-gray-800">{item.mark?.name}</span>
                           <span className="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{item.grade}</span>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Rate (₹)</label>
-                            <input 
+                            <input
                               type="number"
                               value={rowData.soldRate}
                               onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldRate: e.target.value } }))}
@@ -275,14 +352,14 @@ export default function MobilePrivateSalePage() {
                           <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Sold Inv No</label>
                             <div className="flex gap-1">
-                              <input 
+                              <input
                                 type="number"
                                 value={rowData.soldInvNo}
                                 onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldInvNo: e.target.value } }))}
                                 className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none text-sm font-semibold"
                                 placeholder="Optional"
                               />
-                              <button 
+                              <button
                                 onClick={() => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldInvNo: String(item.invNo || "") } }))}
                                 className="bg-slate-100 text-gray-500 p-2 rounded-xl border border-slate-200 active:bg-slate-200"
                               >

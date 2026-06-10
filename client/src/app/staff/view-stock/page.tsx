@@ -15,6 +15,8 @@ const GRADES = [
 
 interface StockEntry {
   id: string;
+  factory?: { name: string } | null;
+  mark?: { name: string } | null;
   inv: string | null;
   invNo: number | null;
   grade: string | null;
@@ -54,12 +56,19 @@ export default function ViewStockPage() {
     return <ArrowDown size={14} className="text-indigo-600 ml-1" />;
   };
 
-  // Filters
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [filterInv, setFilterInv] = useState("");
-  const [filterInvNo, setFilterInvNo] = useState("");
-  const [filterGrade, setFilterGrade] = useState("");
+  // Search & Filter State
+  const SEARCH_FIELDS = [
+    { key: 'grade', label: 'Grade', type: 'select' },
+    { key: 'dop', label: 'Date of Purchase (DOP)', type: 'date' },
+    { key: 'user', label: 'User', type: 'text' },
+  ];
+
+  const [filterFactory, setFilterFactory] = useState("");
+  const [filterInvCombined, setFilterInvCombined] = useState("");
+  const [searchField, setSearchField] = useState("grade");
+  const [searchValue, setSearchValue] = useState("");
+  const [searchDateFrom, setSearchDateFrom] = useState("");
+  const [searchDateTo, setSearchDateTo] = useState("");
 
   useEffect(() => {
     const fetchStock = async () => {
@@ -77,19 +86,35 @@ export default function ViewStockPage() {
 
   const filteredStock = useMemo(() => {
     let result = stockData.filter((item) => {
-      // Filter DOP Range
-      if (filterDateFrom || filterDateTo) {
-        const itemDateStr = item.dop ? new Date(item.dop).toISOString().split('T')[0] : "";
-        if (!itemDateStr) return false;
-        if (filterDateFrom && itemDateStr < filterDateFrom) return false;
-        if (filterDateTo && itemDateStr > filterDateTo) return false;
+      // Dedicated Filters
+      if (filterFactory && (!item.factory?.name || !item.factory.name.toLowerCase().includes(filterFactory.toLowerCase()))) return false;
+      if (filterInvCombined) {
+        const textPart = filterInvCombined.replace(/[0-9]/g, '').trim().toLowerCase();
+        const numPart = filterInvCombined.replace(/[^0-9]/g, '').trim();
+        if (textPart && (!item.inv || !item.inv.toLowerCase().includes(textPart))) return false;
+        if (numPart && item.invNo?.toString() !== numPart) return false;
       }
-      // Filter Inv
-      if (filterInv && (!item.inv || item.inv.toLowerCase().indexOf(filterInv.toLowerCase()) === -1)) return false;
-      // Filter InvNo
-      if (filterInvNo && item.invNo?.toString() !== filterInvNo) return false;
-      // Filter Grade
-      if (filterGrade && item.grade !== filterGrade) return false;
+
+      const fieldDef = SEARCH_FIELDS.find(f => f.key === searchField);
+      if (!fieldDef) return true;
+
+      if (fieldDef.type === 'date') {
+        if (!searchDateFrom && !searchDateTo) return true;
+        let itemDate: string | null | undefined = null;
+        if (searchField === 'dop') itemDate = item.dop;
+        
+        if (!itemDate) return false;
+        const itemDateStr = new Date(itemDate).toISOString().split('T')[0];
+        if (searchDateFrom && itemDateStr < searchDateFrom) return false;
+        if (searchDateTo && itemDateStr > searchDateTo) return false;
+        return true;
+      }
+
+      if (!searchValue) return true;
+      const term = searchValue.toLowerCase();
+
+      if (searchField === 'grade') return item.grade === searchValue;
+      if (searchField === 'user') return !!item.user && item.user.toLowerCase().includes(term);
       
       return true;
     });
@@ -98,6 +123,14 @@ export default function ViewStockPage() {
       result.sort((a, b) => {
         let aValue: any = a[sortConfig.key as keyof StockEntry];
         let bValue: any = b[sortConfig.key as keyof StockEntry];
+
+        if (sortConfig.key === 'factory') {
+          aValue = a.factory?.name || "";
+          bValue = b.factory?.name || "";
+        } else if (sortConfig.key === 'mark') {
+          aValue = a.mark?.name || "";
+          bValue = b.mark?.name || "";
+        }
 
         if (aValue === null || aValue === undefined) aValue = "";
         if (bValue === null || bValue === undefined) bValue = "";
@@ -113,14 +146,14 @@ export default function ViewStockPage() {
     }
 
     return result;
-  }, [stockData, filterDateFrom, filterDateTo, filterInv, filterInvNo, filterGrade, sortConfig]);
+  }, [stockData, searchField, searchValue, searchDateFrom, searchDateTo, filterFactory, filterInvCombined, sortConfig]);
 
   const clearFilters = () => {
-    setFilterDateFrom("");
-    setFilterDateTo("");
-    setFilterInv("");
-    setFilterInvNo("");
-    setFilterGrade("");
+    setSearchValue("");
+    setSearchDateFrom("");
+    setSearchDateTo("");
+    setFilterFactory("");
+    setFilterInvCombined("");
   };
 
   const formatDate = (isoString: string | null) => {
@@ -193,65 +226,97 @@ export default function ViewStockPage() {
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date (DOP) Range</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
-                />
-                <span className="text-gray-400">-</span>
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Inv Mark</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Factory</label>
               <div className="relative">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search Inv"
-                  value={filterInv}
-                  onChange={(e) => setFilterInv(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 w-28 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm"
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Inv No</label>
-              <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="number"
-                  placeholder="Search Inv No"
-                  value={filterInvNo}
-                  onChange={(e) => setFilterInvNo(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 w-32 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm"
+                  placeholder="e.g. ABC Factory"
+                  value={filterFactory}
+                  onChange={(e) => setFilterFactory(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 w-36 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm placeholder:normal-case"
                 />
               </div>
             </div>
 
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Grade</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Inv</label>
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="e.g. MK123"
+                  value={filterInvCombined}
+                  onChange={(e) => setFilterInvCombined(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 w-32 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm uppercase placeholder:normal-case"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Field</label>
               <select
-                value={filterGrade}
-                onChange={(e) => setFilterGrade(e.target.value)}
-                className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm cursor-pointer"
+                value={searchField}
+                onChange={(e) => {
+                  setSearchField(e.target.value);
+                  clearFilters();
+                }}
+                className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm cursor-pointer min-w-[150px]"
               >
-                <option value="">All Grades</option>
-                {GRADES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                {SEARCH_FIELDS.map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
                 ))}
               </select>
             </div>
+
+            {SEARCH_FIELDS.find(f => f.key === searchField)?.type === 'date' ? (
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date Range</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={searchDateFrom}
+                    onChange={(e) => setSearchDateFrom(e.target.value)}
+                    className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
+                  />
+                  <span className="text-gray-400">-</span>
+                  <input
+                    type="date"
+                    value={searchDateTo}
+                    onChange={(e) => setSearchDateTo(e.target.value)}
+                    className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
+                  />
+                </div>
+              </div>
+            ) : SEARCH_FIELDS.find(f => f.key === searchField)?.type === 'select' ? (
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Select Value</label>
+                <select
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm cursor-pointer min-w-[150px]"
+                >
+                  <option value="">Any</option>
+                  {GRADES.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Value</label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Enter search term..."
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 w-48 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm placeholder:normal-case"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col justify-end h-full mt-5">
               <button
@@ -273,6 +338,8 @@ export default function ViewStockPage() {
                 <tr>
                   <th className="px-4 py-3 w-12 text-center">#</th>
                   {[
+                    { key: 'factory', label: 'FACTORY' },
+                    { key: 'mark', label: 'MARK' },
                     { key: 'inv', label: 'INV' },
                     { key: 'invNo', label: 'INV NO' },
                     { key: 'grade', label: 'GRADE' },
@@ -325,6 +392,12 @@ export default function ViewStockPage() {
                         >
                           <td className="px-4 py-2.5 text-center text-gray-400 font-medium">
                             {index + 1}
+                          </td>
+                          <td className="px-2 py-2.5 font-medium text-gray-800">
+                            {row.factory?.name || "-"}
+                          </td>
+                          <td className="px-2 py-2.5 font-medium text-gray-800">
+                            {row.mark?.name || "-"}
                           </td>
                           <td className="px-2 py-2.5 font-medium text-gray-800">
                             {isEditing ? (

@@ -20,8 +20,43 @@ export default function MobileOwnerLayout({
     // Add mobile specific classes to the body
     document.body.classList.add("overscroll-none", "select-none", "touch-pan-y");
 
+    const syncPendingSales = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      const pendingSalesStr = localStorage.getItem('pending_private_sales');
+      if (!pendingSalesStr) return;
+
+      const pendingSales = JSON.parse(pendingSalesStr);
+      if (pendingSales.length === 0) return;
+      
+      let allSuccess = true;
+      for (const sale of pendingSales) {
+        try {
+          const promises = sale.payload.map((p: any) => api.put(`/stock/${p.id}`, p.data));
+          await Promise.all(promises);
+        } catch (e) {
+           console.error("Failed to sync offline sale", e);
+           allSuccess = false;
+        }
+      }
+
+      if (allSuccess) {
+         localStorage.removeItem('pending_private_sales');
+         // We might trigger a toast, but layout doesn't have useToasts by default here unless we import it
+         console.log('Successfully synced all offline sales');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', syncPendingSales);
+      // Try syncing immediately in case we mounted while online with pending data
+      syncPendingSales();
+    }
+
     return () => {
       document.body.classList.remove("overscroll-none", "select-none", "touch-pan-y");
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', syncPendingSales);
+      }
     };
   }, []);
 

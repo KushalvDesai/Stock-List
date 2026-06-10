@@ -108,6 +108,7 @@ model Stock {
   soldInvNo          Int?
   billNo             String?
   biltyNo            String?
+  transporter        String?
   purchaseSample     Boolean?
   purchaseSampleDate DateTime?
   auction            Boolean?  @default(false)
@@ -125,6 +126,8 @@ model Stock {
   editRequests       StockEditRequest[]
   isDeleted          Boolean   @default(false)
   deletedAt          DateTime?
+
+  @@unique([inv, invNo, markId, factoryId, grade])
 }
 
 model StockEditRequest {
@@ -154,6 +157,7 @@ model StockMaster {
   soldInvNo          Int?
   billNo             String?
   biltyNo            String?
+  transporter        String?
   purchaseSample     Boolean?
   purchaseSampleDate DateTime?
   auction            Boolean?  @default(false)
@@ -168,6 +172,8 @@ model StockMaster {
   user               String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@unique([inv, invNo, markId, factoryId, grade])
 }
 
 model UpdateOtp {

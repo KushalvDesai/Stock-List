@@ -26,13 +26,38 @@ export default function MobileInventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<'all' | 'available' | 'sold'>('available');
 
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      const handleOnline = () => setIsOffline(false);
+      const handleOffline = () => setIsOffline(true);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
   useEffect(() => {
     const fetchStock = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = localStorage.getItem('offline_inventory');
+        if (cached) setStockData(JSON.parse(cached));
+        setIsLoading(false);
+        return;
+      }
       try {
         const response = await api.get("/stock");
         setStockData(response.data);
+        localStorage.setItem('offline_inventory', JSON.stringify(response.data));
       } catch (error) {
         console.error("Failed to fetch stock:", error);
+        const cached = localStorage.getItem('offline_inventory');
+        if (cached) setStockData(JSON.parse(cached));
       } finally {
         setIsLoading(false);
       }
@@ -87,6 +112,12 @@ export default function MobileInventoryPage() {
           ))}
         </div>
       </div>
+
+      {isOffline && (
+        <div className="bg-amber-100 text-amber-800 text-[10px] font-bold text-center py-1 uppercase tracking-wider">
+          Offline Mode - Showing Cached Data
+        </div>
+      )}
 
       {/* List Content */}
       <div className="p-4 space-y-3 pb-8">

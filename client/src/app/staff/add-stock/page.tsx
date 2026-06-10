@@ -83,6 +83,34 @@ export default function AddStockPage() {
     return row;
   };
 
+  const checkedCombosRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const checkDuplicates = async () => {
+      for (const row of rows) {
+        if (row.inv && row.invNo && row.grade && row.markId) {
+          const comboKey = `${row.inv}-${row.invNo}-${row.grade}-${row.markId}`;
+          if (!checkedCombosRef.current.has(comboKey)) {
+            checkedCombosRef.current.add(comboKey);
+            try {
+              const res = await api.get(`/stock/check-duplicate?inv=${row.inv}&invNo=${row.invNo}&grade=${row.grade}&markId=${row.markId}`);
+              if (res.data.exists) {
+                const stock = res.data.stock;
+                const d = new Date(stock.createdAt).toLocaleDateString('en-GB');
+                toast.error(`Duplicate Alert: Stock for INV ${row.inv}, NO ${row.invNo}, ${row.grade} already exists (Created by ${stock.user || 'System'} on ${d}).`);
+              }
+            } catch (error) {
+              console.error("Failed to check duplicate:", error);
+            }
+          }
+        }
+      }
+    };
+    
+    const timeoutId = setTimeout(checkDuplicates, 800);
+    return () => clearTimeout(timeoutId);
+  }, [rows, toast]);
+
   const checkHasData = (row: any) => {
     return !!(row.inv || row.invNo || row.totalBags || row.bagWt || row.netWt || row.markId);
   };
@@ -129,8 +157,9 @@ export default function AddStockPage() {
       }
       toast.success(`Successfully saved ${rowsToSubmit.length} stock entries`);
       setRows(Array.from({ length: 5 }, () => generateEmptyRow()));
-    } catch (error) {
-      toast.error("Failed to submit entries.");
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || "Failed to submit entries.";
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }
