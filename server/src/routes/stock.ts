@@ -4,6 +4,44 @@ import { authenticate, authorize, AuthRequest } from '../middleware/authMiddlewa
 
 const router = Router();
 
+// Endpoint to check for duplicate stock entry before submission
+router.get('/check-duplicate', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { inv, invNo, grade, markId } = req.query;
+    
+    if (!inv || !invNo || !grade || !markId) {
+      res.status(200).json({ exists: false });
+      return;
+    }
+
+    const mark = await prisma.mark.findUnique({ where: { id: String(markId) } });
+    const factoryId = mark?.factoryId || null;
+
+    const stock = await prisma.stock.findFirst({
+      where: {
+        inv: String(inv),
+        invNo: parseInt(String(invNo), 10),
+        grade: String(grade) as any,
+        markId: String(markId),
+        factoryId: factoryId
+      },
+      include: {
+        mark: true,
+        factory: true
+      }
+    });
+
+    if (stock) {
+      res.status(200).json({ exists: true, stock });
+    } else {
+      res.status(200).json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Error checking duplicate:', error);
+    res.status(500).json({ message: 'Internal server error while checking duplicate' });
+  }
+});
+
 // Endpoint for staff, owner, and admin to fetch stock data
 router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
