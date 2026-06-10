@@ -32,6 +32,7 @@ interface StockEntry {
   soldInvNo: number | null;
   billNo: string | null;
   biltyNo: string | null;
+  transporter: string | null;
   purchaseSample: boolean | null;
   purchaseSampleDate: string | null;
 }
@@ -53,7 +54,7 @@ export default function PrivateSalePage() {
   // Selection and Bulk Edit State
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
-  const [bulkGlobalData, setBulkGlobalData] = useState({ broker: "", buyer: "" });
+  const [bulkGlobalData, setBulkGlobalData] = useState({ broker: "", buyer: "", transporter: "" });
   const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
@@ -128,7 +129,7 @@ export default function PrivateSalePage() {
       };
     });
     setBulkRowData(initialRowData);
-    setBulkGlobalData({ broker: "", buyer: "" });
+    setBulkGlobalData({ broker: "", buyer: "", transporter: "" });
     setIsBulkEditModalOpen(true);
   };
 
@@ -140,6 +141,7 @@ export default function PrivateSalePage() {
         const payload = {
           BROKER: bulkGlobalData.broker,
           BUYER: bulkGlobalData.buyer,
+          TRANSPORTER: bulkGlobalData.transporter,
           SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
           SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
           SOLD_DATE: new Date().toISOString(),
@@ -152,7 +154,7 @@ export default function PrivateSalePage() {
       toast.success(`Successfully updated ${selectedRowIds.length} items!`);
       setIsBulkEditModalOpen(false);
       setSelectedRowIds([]);
-      setBulkGlobalData({ broker: "", buyer: "" });
+      setBulkGlobalData({ broker: "", buyer: "", transporter: "" });
       setBulkRowData({});
       
       // Refresh stock data
@@ -284,6 +286,7 @@ export default function PrivateSalePage() {
                     <th className="px-4 py-3 text-center whitespace-nowrap">DOP</th>
                     <th className="px-4 py-3 text-center">BROKER</th>
                     <th className="px-4 py-3 text-center">BUYER</th>
+                    <th className="px-4 py-3 text-center">TRANSPORTER</th>
                     <th className="px-4 py-3 text-center whitespace-nowrap">SOLD DATE</th>
                     <th className="px-4 py-3 text-right">SOLD RATE</th>
                     <th className="px-4 py-3 text-center">SOLD INV NO</th>
@@ -296,13 +299,13 @@ export default function PrivateSalePage() {
                 <tbody className="divide-y divide-gray-100">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={18} className="px-4 py-12 text-center text-gray-500 font-medium">
+                      <td colSpan={19} className="px-4 py-12 text-center text-gray-500 font-medium">
                         Loading stock database...
                       </td>
                     </tr>
                   ) : filteredStock.length === 0 ? (
                     <tr>
-                      <td colSpan={18} className="px-4 py-12 text-center text-gray-500 font-medium">
+                      <td colSpan={19} className="px-4 py-12 text-center text-gray-500 font-medium">
                         No stock entries found matching your criteria.
                       </td>
                     </tr>
@@ -353,6 +356,9 @@ export default function PrivateSalePage() {
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-700">
                             {row.buyer || "-"}
+                          </td>
+                          <td className="px-4 py-2.5 text-center text-gray-700">
+                            {row.transporter || "-"}
                           </td>
                           <td className="px-4 py-2.5 text-center text-gray-600 whitespace-nowrap">
                             {formatDate(row.soldDate)}
@@ -409,9 +415,9 @@ export default function PrivateSalePage() {
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-6 mb-8 bg-indigo-50 p-4 rounded-none border border-indigo-100">
+              <div className="grid grid-cols-3 gap-6 mb-8 bg-indigo-50 p-4 rounded-none border border-indigo-100">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Global Broker</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Broker</label>
                   <input 
                     type="text"
                     value={bulkGlobalData.broker}
@@ -421,13 +427,23 @@ export default function PrivateSalePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Global Buyer</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Buyer</label>
                   <input 
                     type="text"
                     value={bulkGlobalData.buyer}
                     onChange={(e) => setBulkGlobalData(prev => ({ ...prev, buyer: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
                     placeholder="Enter Buyer Name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Transporter</label>
+                  <input 
+                    type="text"
+                    value={bulkGlobalData.transporter}
+                    onChange={(e) => setBulkGlobalData(prev => ({ ...prev, transporter: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                    placeholder="Enter Transporter Name"
                   />
                 </div>
               </div>
