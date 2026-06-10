@@ -37,13 +37,38 @@ export default function MobilePrivateSalePage() {
   const [globalTransporter, setGlobalTransporter] = useState("");
   const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
 
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      const handleOnline = () => setIsOffline(false);
+      const handleOffline = () => setIsOffline(true);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
   useEffect(() => {
     const fetchStock = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = localStorage.getItem('offline_inventory');
+        if (cached) setStockData(JSON.parse(cached));
+        setIsLoading(false);
+        return;
+      }
       try {
         const response = await api.get("/stock");
         setStockData(response.data);
+        localStorage.setItem('offline_inventory', JSON.stringify(response.data));
       } catch (error) {
         console.error("Failed to fetch stock:", error);
+        const cached = localStorage.getItem('offline_inventory');
+        if (cached) setStockData(JSON.parse(cached));
       } finally {
         setIsLoading(false);
       }
@@ -82,6 +107,46 @@ export default function MobilePrivateSalePage() {
 
   const submitSale = async () => {
     setIsSubmitting(true);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const pendingSales = JSON.parse(localStorage.getItem('pending_private_sales') || '[]');
+      const offlineId = Date.now().toString();
+      
+      const payload = selectedRowIds.map(id => {
+        const rowInput = bulkRowData[id];
+        return {
+          id,
+          data: {
+            BROKER: globalBroker,
+            BUYER: globalBuyer,
+            TRANSPORTER: globalTransporter,
+            SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
+            SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
+            SOLD_DATE: new Date().toISOString(),
+          }
+        };
+      });
+      
+      pendingSales.push({ syncId: offlineId, payload });
+      localStorage.setItem('pending_private_sales', JSON.stringify(pendingSales));
+      
+      const updatedStockData = stockData.map(item => {
+        if (selectedRowIds.includes(item.id)) {
+           const rowInput = bulkRowData[item.id];
+           return { ...item, soldRate: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : 0, soldDate: new Date().toISOString() };
+        }
+        return item;
+      });
+      
+      setStockData(updatedStockData);
+      localStorage.setItem('offline_inventory', JSON.stringify(updatedStockData));
+
+      toast.success(`Offline: Saved ${selectedRowIds.length} items. Will sync when online.`);
+      setIsModalOpen(false);
+      setSelectedRowIds([]);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const promises = selectedRowIds.map(id => {
         const rowInput = bulkRowData[id];
@@ -104,6 +169,7 @@ export default function MobilePrivateSalePage() {
       // Refresh list
       const response = await api.get("/stock");
       setStockData(response.data);
+      localStorage.setItem('offline_inventory', JSON.stringify(response.data));
     } catch (error) {
       console.error(error);
       toast.error("Failed to process sale.");
