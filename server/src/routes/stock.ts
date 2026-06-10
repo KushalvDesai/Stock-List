@@ -259,9 +259,13 @@ router.post('/upload', authenticate, authorize(['staff', 'owner', 'admin']), asy
       stock: result[0],
       stockMaster: result[1],
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading stock data:', error);
-    res.status(500).json({ message: 'Internal server error while uploading stock data' });
+    if (error.code === 'P2002') {
+      res.status(400).json({ message: 'Duplicate entry: A stock with this Inv, Inv No, Grade, Mark, and Factory already exists.' });
+    } else {
+      res.status(500).json({ message: 'Internal server error while uploading stock data' });
+    }
   }
 });
 

@@ -129,8 +129,9 @@ export default function AddStockPage() {
       }
       toast.success(`Successfully saved ${rowsToSubmit.length} stock entries`);
       setRows(Array.from({ length: 5 }, () => generateEmptyRow()));
-    } catch (error) {
-      toast.error("Failed to submit entries.");
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || "Failed to submit entries.";
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }
