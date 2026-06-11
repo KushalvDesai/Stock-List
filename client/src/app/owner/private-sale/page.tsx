@@ -35,6 +35,8 @@ interface StockEntry {
   transporter: string | null;
   purchaseSample: boolean | null;
   purchaseSampleDate: string | null;
+  factory?: { name: string } | null;
+  mark?: { name: string } | null;
 }
 
 const OWNER_LINKS: SidebarLink[] = [
@@ -57,6 +59,17 @@ export default function PrivateSalePage() {
   const [bulkGlobalData, setBulkGlobalData] = useState({ broker: "", buyer: "", transporter: "" });
   const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+
+  // Dispatch Message States
+  const [isDispatchSetupModalOpen, setIsDispatchSetupModalOpen] = useState(false);
+  const [dispatchTemplate, setDispatchTemplate] = useState("");
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successDispatchMessage, setSuccessDispatchMessage] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem('dispatch_template');
+    if (saved) setDispatchTemplate(saved);
+  }, []);
 
   // Filters
   const [filterDate, setFilterDate] = useState("");
@@ -136,6 +149,8 @@ export default function PrivateSalePage() {
   const submitBulkEdit = async () => {
     setIsSubmittingEdit(true);
     try {
+      let combinedMessage = "";
+
       const promises = selectedRowIds.map(id => {
         const rowInput = bulkRowData[id];
         const payload = {
@@ -146,6 +161,23 @@ export default function PrivateSalePage() {
           SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
           SOLD_DATE: new Date().toISOString(),
         };
+
+        if (dispatchTemplate) {
+          const item = stockData.find(s => s.id === id);
+          if (item) {
+            let msg = dispatchTemplate;
+            msg = msg.replace(/\[factory\]/g, item.factory?.name || "");
+            msg = msg.replace(/\[mark\]/g, item.mark?.name || "");
+            msg = msg.replace(/\[inv\+invNo\]/g, `${item.inv || ""}${item.invNo || ""}`);
+            msg = msg.replace(/\[grade\]/g, item.grade || "");
+            msg = msg.replace(/\[soldRate\]/g, rowInput?.soldRate || "");
+            msg = msg.replace(/\[broker\]/g, bulkGlobalData.broker || "");
+            msg = msg.replace(/\[buyer\]/g, bulkGlobalData.buyer || "");
+            msg = msg.replace(/\[transporter\]/g, bulkGlobalData.transporter || "");
+            combinedMessage += msg + "\n";
+          }
+        }
+
         return api.put(`/stock/${id}`, payload);
       });
       
@@ -156,6 +188,11 @@ export default function PrivateSalePage() {
       setSelectedRowIds([]);
       setBulkGlobalData({ broker: "", buyer: "", transporter: "" });
       setBulkRowData({});
+
+      if (combinedMessage.trim()) {
+        setSuccessDispatchMessage(combinedMessage.trim());
+        setIsSuccessModalOpen(true);
+      }
       
       // Refresh stock data
       const response = await api.get("/stock");
@@ -203,13 +240,21 @@ export default function PrivateSalePage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-slate-50 shadow-none px-6 py-4 rounded-none border border-slate-300 gap-4">
             <div>
               <p className="text-sm text-gray-500 font-medium mb-3">View the entire stock available for private sale.</p>
-              <button
-                onClick={openBulkModal}
-                disabled={selectedRowIds.length === 0}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-none text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-none"
-              >
-                Mark Selected as Sold ({selectedRowIds.length})
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={openBulkModal}
+                  disabled={selectedRowIds.length === 0}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-none text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-none"
+                >
+                  Mark Selected as Sold ({selectedRowIds.length})
+                </button>
+                <button
+                  onClick={() => setIsDispatchSetupModalOpen(true)}
+                  className="px-4 py-2 bg-slate-200 text-slate-700 border border-slate-300 rounded-none text-sm font-medium hover:bg-slate-300 transition-colors shadow-none"
+                >
+                  Setup Dispatch Message
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -513,6 +558,104 @@ export default function PrivateSalePage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-none shadow-none transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {isSubmittingEdit ? "Saving..." : "Save Details"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Dispatch Setup Modal */}
+      {isDispatchSetupModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-50 rounded-none shadow-none w-full max-w-2xl flex flex-col overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-slate-300 flex justify-between items-center bg-slate-100">
+              <h2 className="text-lg font-bold text-slate-700">Setup Dispatch Message</h2>
+              <button onClick={() => setIsDispatchSetupModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">Click a variable to insert it into your template.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {['[factory]', '[mark]', '[inv+invNo]', '[grade]', '[soldRate]', '[broker]', '[buyer]', '[transporter]'].map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setDispatchTemplate(prev => prev + v)}
+                    className="px-2 py-1 bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-none hover:bg-indigo-200 transition-colors"
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={dispatchTemplate}
+                onChange={(e) => setDispatchTemplate(e.target.value)}
+                className="w-full h-32 p-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                placeholder="Example: [mark] [inv+invNo] [grade] bought at [soldRate] by [broker] for [buyer] depot [transporter]"
+              />
+            </div>
+            <div className="px-6 py-4 bg-slate-100 border-t border-slate-300 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsDispatchSetupModalOpen(false)}
+                className="px-4 py-2 border border-slate-300 bg-white text-slate-700 font-medium rounded-none hover:bg-slate-50 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  localStorage.setItem('dispatch_template', dispatchTemplate);
+                  setIsDispatchSetupModalOpen(false);
+                  toast.success("Dispatch template saved!");
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-none hover:bg-indigo-700 transition-colors text-sm"
+              >
+                Save Template
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Dispatch Success Modal */}
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-50 rounded-none shadow-none w-full max-w-2xl flex flex-col overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-slate-300 flex justify-between items-center bg-slate-100">
+              <h2 className="text-lg font-bold text-slate-700">Dispatch Message</h2>
+              <button onClick={() => setIsSuccessModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <textarea
+                readOnly
+                value={successDispatchMessage}
+                className="w-full h-48 p-3 border border-gray-300 rounded-none bg-white outline-none text-sm font-mono whitespace-pre-wrap"
+              />
+            </div>
+            <div className="px-6 py-4 bg-slate-100 border-t border-slate-300 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsSuccessModalOpen(false)}
+                className="px-4 py-2 border border-slate-300 bg-white text-slate-700 font-medium rounded-none hover:bg-slate-50 transition-colors text-sm"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(successDispatchMessage);
+                  toast.success("Copied to clipboard!");
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-none hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm"
+              >
+                Copy to Clipboard
               </button>
             </div>
           </motion.div>

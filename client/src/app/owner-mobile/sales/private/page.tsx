@@ -37,7 +37,20 @@ export default function MobilePrivateSalePage() {
   const [globalTransporter, setGlobalTransporter] = useState("");
   const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
 
+  // Dispatch Message States
+  const [isDispatchSetupModalOpen, setIsDispatchSetupModalOpen] = useState(false);
+  const [dispatchTemplate, setDispatchTemplate] = useState("");
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successDispatchMessage, setSuccessDispatchMessage] = useState("");
+
   const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dispatch_template');
+      if (saved) setDispatchTemplate(saved);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
@@ -107,12 +120,33 @@ export default function MobilePrivateSalePage() {
 
   const submitSale = async () => {
     setIsSubmitting(true);
+    let combinedMessage = "";
+
+    const processMessage = (id: string, rowInput: any) => {
+        if (dispatchTemplate) {
+          const item = stockData.find(s => s.id === id);
+          if (item) {
+            let msg = dispatchTemplate;
+            msg = msg.replace(/\[factory\]/g, item.factory?.name || "");
+            msg = msg.replace(/\[mark\]/g, item.mark?.name || "");
+            msg = msg.replace(/\[inv\+invNo\]/g, `${item.inv || ""}${item.invNo || ""}`);
+            msg = msg.replace(/\[grade\]/g, item.grade || "");
+            msg = msg.replace(/\[soldRate\]/g, rowInput?.soldRate || "");
+            msg = msg.replace(/\[broker\]/g, globalBroker || "");
+            msg = msg.replace(/\[buyer\]/g, globalBuyer || "");
+            msg = msg.replace(/\[transporter\]/g, globalTransporter || "");
+            combinedMessage += msg + "\n";
+          }
+        }
+    };
+
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       const pendingSales = JSON.parse(localStorage.getItem('pending_private_sales') || '[]');
       const offlineId = Date.now().toString();
       
       const payload = selectedRowIds.map(id => {
         const rowInput = bulkRowData[id];
+        processMessage(id, rowInput);
         return {
           id,
           data: {
@@ -144,12 +178,18 @@ export default function MobilePrivateSalePage() {
       setIsModalOpen(false);
       setSelectedRowIds([]);
       setIsSubmitting(false);
+
+      if (combinedMessage.trim()) {
+        setSuccessDispatchMessage(combinedMessage.trim());
+        setIsSuccessModalOpen(true);
+      }
       return;
     }
 
     try {
       const promises = selectedRowIds.map(id => {
         const rowInput = bulkRowData[id];
+        processMessage(id, rowInput);
         return api.put(`/stock/${id}`, {
           BROKER: globalBroker,
           BUYER: globalBuyer,
@@ -165,6 +205,11 @@ export default function MobilePrivateSalePage() {
       toast.success(`Successfully sold ${selectedRowIds.length} items!`);
       setIsModalOpen(false);
       setSelectedRowIds([]);
+
+      if (combinedMessage.trim()) {
+        setSuccessDispatchMessage(combinedMessage.trim());
+        setIsSuccessModalOpen(true);
+      }
 
       // Refresh list
       const response = await api.get("/stock");
@@ -182,11 +227,19 @@ export default function MobilePrivateSalePage() {
     <div className="flex flex-col h-full bg-slate-50 relative pb-24">
       {/* Top Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col gap-3 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Link href="/owner-mobile/sales" className="p-1 -ml-1 text-gray-400 hover:text-indigo-600 transition-colors">
-            <ChevronLeft size={24} />
-          </Link>
-          <h2 className="text-lg font-bold text-gray-800">Private Sale</h2>
+        <div className="flex justify-between items-center w-full">
+          <div className="flex items-center gap-3">
+            <Link href="/owner-mobile/sales" className="p-1 -ml-1 text-gray-400 hover:text-indigo-600 transition-colors">
+              <ChevronLeft size={24} />
+            </Link>
+            <h2 className="text-lg font-bold text-gray-800">Private Sale</h2>
+          </div>
+          <button 
+            onClick={() => setIsDispatchSetupModalOpen(true)} 
+            className="text-indigo-600 font-bold text-xs bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100"
+          >
+            Setup Msg
+          </button>
         </div>
 
         <div className="relative">
@@ -381,6 +434,110 @@ export default function MobilePrivateSalePage() {
                   className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl active:bg-indigo-700 disabled:opacity-50 transition-colors"
                 >
                   {isSubmitting ? "Processing..." : `Confirm Sale (${selectedRowIds.length} items)`}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dispatch Setup Modal */}
+      <AnimatePresence>
+        {isDispatchSetupModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-[60] flex flex-col justify-end">
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              className="bg-white w-full rounded-t-3xl max-h-[90vh] flex flex-col overflow-hidden max-w-2xl mx-auto"
+            >
+              <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                <h3 className="font-bold text-lg text-gray-800">Setup Dispatch Message</h3>
+                <button onClick={() => setIsDispatchSetupModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-gray-500">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 p-6 bg-slate-50">
+                <p className="text-xs font-medium text-gray-500 mb-3">Tap a variable to insert it</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {['[factory]', '[mark]', '[inv+invNo]', '[grade]', '[soldRate]', '[broker]', '[buyer]', '[transporter]'].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setDispatchTemplate(prev => prev + v)}
+                      className="px-2.5 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[11px] font-bold uppercase rounded-lg active:bg-indigo-100"
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={dispatchTemplate}
+                  onChange={(e) => setDispatchTemplate(e.target.value)}
+                  className="w-full h-32 p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                  placeholder="Example: [mark] [inv+invNo] [grade] bought at [soldRate] by [broker] for [buyer]"
+                />
+              </div>
+
+              <div className="p-4 bg-white border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),16px)]">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('dispatch_template', dispatchTemplate);
+                    setIsDispatchSetupModalOpen(false);
+                    toast.success("Template saved!");
+                  }}
+                  className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl active:bg-indigo-700 transition-colors"
+                >
+                  Save Template
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dispatch Success Modal */}
+      <AnimatePresence>
+        {isSuccessModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-[70] flex flex-col justify-end">
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              className="bg-white w-full rounded-t-3xl max-h-[90vh] flex flex-col overflow-hidden max-w-2xl mx-auto"
+            >
+              <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                <h3 className="font-bold text-lg text-gray-800">Dispatch Message</h3>
+                <button onClick={() => setIsSuccessModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-gray-500">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 p-6 bg-slate-50">
+                <textarea
+                  readOnly
+                  value={successDispatchMessage}
+                  className="w-full h-48 p-4 border border-gray-200 rounded-2xl bg-white outline-none text-sm font-mono whitespace-pre-wrap"
+                />
+              </div>
+
+              <div className="p-4 bg-white border-t border-gray-100 flex gap-3 pb-[max(env(safe-area-inset-bottom),16px)]">
+                <button
+                  onClick={() => setIsSuccessModalOpen(false)}
+                  className="flex-1 bg-gray-100 text-gray-700 font-bold py-4 rounded-2xl active:bg-gray-200 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(successDispatchMessage);
+                    toast.success("Copied!");
+                  }}
+                  className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl active:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Copy size={18} /> Copy
                 </button>
               </div>
             </motion.div>
