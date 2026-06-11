@@ -120,7 +120,7 @@ export default function PrivateSalePage() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedRowIds(filteredStock.map(item => item.id));
+      setSelectedRowIds(filteredStock.filter(item => !item.soldDate).map(item => item.id));
     } else {
       setSelectedRowIds([]);
     }
@@ -318,7 +318,7 @@ export default function PrivateSalePage() {
                       <input 
                         type="checkbox" 
                         className="w-4 h-4 text-indigo-600 bg-slate-200 border-gray-300 rounded-none focus:ring-indigo-500 cursor-pointer"
-                        checked={filteredStock.length > 0 && selectedRowIds.length === filteredStock.length}
+                        checked={filteredStock.filter(item => !item.soldDate).length > 0 && selectedRowIds.length === filteredStock.filter(item => !item.soldDate).length}
                         onChange={handleSelectAll}
                       />
                     </th>
@@ -368,12 +368,16 @@ export default function PrivateSalePage() {
                           className={`transition-colors ${isSelected ? 'bg-indigo-50/60' : 'hover:bg-indigo-50/30'}`}
                         >
                           <td className="px-4 py-2.5 text-center">
-                            <input 
-                              type="checkbox"
-                              className="w-4 h-4 text-indigo-600 bg-slate-200 border-gray-300 rounded-none focus:ring-indigo-500 cursor-pointer"
-                              checked={isSelected}
-                              onChange={() => handleSelectRow(row.id)}
-                            />
+                            {!row.soldDate ? (
+                              <input 
+                                type="checkbox"
+                                className="w-4 h-4 text-indigo-600 bg-slate-200 border-gray-300 rounded-none focus:ring-indigo-500 cursor-pointer"
+                                checked={isSelected}
+                                onChange={() => handleSelectRow(row.id)}
+                              />
+                            ) : (
+                              <span className="text-emerald-600 font-bold text-[10px] uppercase tracking-wider" title="Already Sold">Sold</span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5 font-medium text-slate-700">
                             {row.inv || "-"}

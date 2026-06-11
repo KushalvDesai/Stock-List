@@ -16,6 +16,7 @@ interface StockEntry {
   netWt: number | null;
   dop: string | null;
   auction: boolean | null;
+  soldDate?: string | null;
   factory?: { name: string } | null;
   mark?: { name: string } | null;
 }
@@ -271,16 +272,20 @@ export default function MobilePrivateSalePage() {
             return (
               <div
                 key={item.id}
-                onClick={() => toggleSelection(item.id)}
-                className={`p-4 rounded-2xl border transition-all active:scale-[0.98] cursor-pointer ${isSelected ? "bg-indigo-50 border-indigo-200 shadow-sm" : "bg-white border-gray-100 shadow-sm"
-                  }`}
+                onClick={() => !item.soldDate && toggleSelection(item.id)}
+                className={`p-4 rounded-2xl border transition-all ${item.soldDate ? 'opacity-70 bg-slate-50 border-gray-200' : `active:scale-[0.98] cursor-pointer ${isSelected ? "bg-indigo-50 border-indigo-200 shadow-sm" : "bg-white border-gray-100 shadow-sm"}`}`}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-gray-300 bg-white"
-                      }`}>
-                      {isSelected && <CheckCircle2 size={14} className="stroke-[3]" />}
-                    </div>
+                    {!item.soldDate ? (
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-gray-300 bg-white"}`}>
+                        {isSelected && <CheckCircle2 size={14} className="stroke-[3]" />}
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 flex items-center justify-center bg-emerald-50 rounded border border-emerald-200">
+                        <CheckCircle2 size={12} className="text-emerald-500 stroke-[3]" />
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-bold text-gray-800 text-base leading-tight">{item.mark?.name || "Unknown Mark"}</h3>
                       <p className="text-xs text-gray-500 font-medium">{item.inv || "-"} / {item.invNo || "-"}</p>
