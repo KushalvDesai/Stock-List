@@ -33,9 +33,25 @@ export function ExcelGrid({
   checkHasData
 }: ExcelGridProps) {
   const toast = useToasts();
-  const [selectedCol, setSelectedCol] = useState<string | null>(null);
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedColState, setSelectedColState] = useState<string | null>(null);
+  const [selectedRowsState, setSelectedRowsState] = useState<number[]>([]);
   
+  const selectedColRef = React.useRef<string | null>(null);
+  const selectedRowsRef = React.useRef<number[]>([]);
+
+  const selectedCol = selectedColState;
+  const selectedRows = selectedRowsState;
+
+  const setSelectedCol = (colName: string | null) => {
+    selectedColRef.current = colName;
+    setSelectedColState(colName);
+  };
+
+  const setSelectedRows = (rowsList: number[]) => {
+    selectedRowsRef.current = rowsList;
+    setSelectedRowsState(rowsList);
+  };
+
   // Full Row Selection for Bulk Actions
   const [selectedFullRows, setSelectedFullRows] = useState<number[]>([]);
 
@@ -204,10 +220,11 @@ export function ExcelGrid({
   };
 
   const handleFocus = (index: number, colName: string) => {
-    if (selectedCol !== colName || selectedRows[0] !== index || selectedRows.length > 1) {
-      setSelectedCol(colName);
-      setSelectedRows([index]);
+    if (selectedColRef.current === colName && selectedRowsRef.current.includes(index)) {
+      return;
     }
+    setSelectedCol(colName);
+    setSelectedRows([index]);
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent<HTMLElement>, index: number, colName: string) => {
