@@ -36,7 +36,8 @@ interface StockEntry {
   purchaseSample: boolean | null;
   purchaseSampleDate: string | null;
   factory?: { name: string } | null;
-  mark?: { name: string } | null;
+  mark?: { id: string, name: string } | null;
+  markId?: string | null;
 }
 
 const OWNER_LINKS: SidebarLink[] = [
@@ -52,12 +53,13 @@ export default function PrivateSalePage() {
   const toast = useToasts();
   const [stockData, setStockData] = useState<StockEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [marks, setMarks] = useState<any[]>([]);
 
   // Selection and Bulk Edit State
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [bulkGlobalData, setBulkGlobalData] = useState({ broker: "", buyer: "", transporter: "" });
-  const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
+  const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string, markId: string }>>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
   // Dispatch Message States
@@ -87,7 +89,26 @@ export default function PrivateSalePage() {
         setIsLoading(false);
       }
     };
+
+    const fetchMarks = async () => {
+      try {
+        const res = await api.get("/company");
+        const companies = res.data || [];
+        let allMarks: any[] = [];
+        companies.forEach((company: any) => {
+          company.factories?.forEach((factory: any) => {
+            if (factory.marks) {
+              allMarks = [...allMarks, ...factory.marks.map((m: any) => ({ ...m, factoryName: factory.name }))];
+            }
+          });
+        });
+        setMarks(allMarks);
+      } catch (error) {
+        console.error("Failed to fetch marks:", error);
+      }
+    };
     fetchStock();
+    fetchMarks();
   }, []);
 
   const filteredStock = useMemo(() => {
@@ -133,12 +154,13 @@ export default function PrivateSalePage() {
   };
 
   const openBulkModal = () => {
-    const initialRowData: Record<string, { soldRate: string, soldInvNo: string }> = {};
+    const initialRowData: Record<string, { soldRate: string, soldInvNo: string, markId: string }> = {};
     selectedRowIds.forEach(id => {
       const row = stockData.find(s => s.id === id);
       initialRowData[id] = {
         soldRate: row?.soldRate ? String(row.soldRate) : "",
         soldInvNo: row?.soldInvNo ? String(row.soldInvNo) : "",
+        markId: row?.markId || "",
       };
     });
     setBulkRowData(initialRowData);
@@ -160,6 +182,7 @@ export default function PrivateSalePage() {
           SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
           SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
           SOLD_DATE: new Date().toISOString(),
+          MARK_ID: rowInput?.markId || undefined,
         };
 
         if (dispatchTemplate) {
@@ -506,7 +529,7 @@ export default function PrivateSalePage() {
 
                   return (
                     <div key={id} className="grid grid-cols-12 gap-6 items-center bg-slate-50 p-4 rounded-none border border-slate-300 shadow-none">
-                      <div className="col-span-4 text-sm">
+                      <div className="col-span-3 text-sm">
                         <div className="font-bold text-slate-800 mb-1">
                           {row.inv || "-"} / {row.invNo || "-"}
                         </div>
@@ -514,7 +537,20 @@ export default function PrivateSalePage() {
                           Grade: {row.grade || "-"} • Bags: {row.totalBags || 0} • Net Wt: {row.netWt || 0}kg
                         </div>
                       </div>
-                      <div className="col-span-4">
+                      <div className="col-span-3">
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Mark</label>
+                        <select
+                          value={rowData.markId}
+                          onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], markId: e.target.value } }))}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-none focus:ring-2 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="">Select Mark</option>
+                          {marks.map((m: any) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-span-3">
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Sold Rate (₹)</label>
                         <input 
                           type="number"
@@ -525,7 +561,7 @@ export default function PrivateSalePage() {
                           placeholder="e.g. 150.50"
                         />
                       </div>
-                      <div className="col-span-4">
+                      <div className="col-span-3">
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Sold Inv No</label>
                         <div className="flex gap-2">
                           <input 

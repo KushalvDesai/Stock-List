@@ -49,13 +49,13 @@ export default function AddStockPage() {
   const [factories, setFactories] = useState<any[]>([]);
 
   useEffect(() => {
-    setRows(Array.from({ length: 5 }, () => generateEmptyRow()));
+    setRows(Array.from({ length: 15 }, () => generateEmptyRow()));
     const fetchFactory = async () => {
       try {
         const res = await api.get('/company/my-factory');
         const f = res.data || [];
         setFactories(f);
-        
+
         let allMarks: any[] = [];
         f.forEach((factory: any) => {
           if (factory.marks) {
@@ -106,7 +106,7 @@ export default function AddStockPage() {
         }
       }
     };
-    
+
     const timeoutId = setTimeout(checkDuplicates, 800);
     return () => clearTimeout(timeoutId);
   }, [rows, toast]);
@@ -156,7 +156,7 @@ export default function AddStockPage() {
         });
       }
       toast.success(`Successfully saved ${rowsToSubmit.length} stock entries`);
-      setRows(Array.from({ length: 5 }, () => generateEmptyRow()));
+      setRows(Array.from({ length: 15 }, () => generateEmptyRow()));
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "Failed to submit entries.";
       toast.error(errMsg);
@@ -180,7 +180,7 @@ export default function AddStockPage() {
 
     // Create a worksheet with just the headers
     const ws = XLSX.utils.aoa_to_sheet([headers]);
-    
+
     // Auto-size columns to look neat
     const wscols = headers.map(h => ({ wch: Math.max(12, h.length) }));
     ws['!cols'] = wscols;
@@ -205,10 +205,10 @@ export default function AddStockPage() {
         const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        
+
         // Convert to array of objects
         const data = XLSX.utils.sheet_to_json(ws);
-        
+
         if (data.length === 0) {
           toast.error("The uploaded Excel file is empty.");
           return;
@@ -218,7 +218,7 @@ export default function AddStockPage() {
           // Match mark name to mark ID
           const markName = row["MARK"] ? String(row["MARK"]).trim() : "";
           const foundMark = marks.find(m => m.name.toLowerCase() === markName.toLowerCase());
-          
+
           // Safely parse the Date
           let dopStr = today;
           if (row["DOP"]) {
@@ -258,7 +258,7 @@ export default function AddStockPage() {
         console.error("Error parsing Excel:", err);
         toast.error("Failed to parse the Excel file. Make sure it matches the template.");
       }
-      
+
       // Reset input so the same file can be uploaded again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -291,18 +291,18 @@ export default function AddStockPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Bulk Stock Entry</h1>
             <p className="text-sm text-gray-500 font-medium">
-              {factories.length > 0 
+              {factories.length > 0
                 ? `Assigned Factories: ${factories.map(f => f.name).join(', ')}`
                 : "No factories assigned."}
             </p>
           </div>
           <div className="flex gap-4">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
-              accept=".xlsx, .xls, .csv" 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept=".xlsx, .xls, .csv"
+              className="hidden"
             />
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -336,15 +336,15 @@ export default function AddStockPage() {
           </div>
         </div>
 
-        <ExcelGrid 
-          columns={columns} 
-          rows={rows} 
-          setRows={setRows} 
-          generateEmptyRow={generateEmptyRow} 
+        <ExcelGrid
+          columns={columns}
+          rows={rows}
+          setRows={setRows}
+          generateEmptyRow={generateEmptyRow}
           onAutoCalculate={handleAutoCalculate}
           checkHasData={checkHasData}
         />
-        
+
       </div>
     </div>
   );

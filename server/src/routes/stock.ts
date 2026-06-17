@@ -520,6 +520,9 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
     
     const currentUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
 
+    const previousStock = await prisma.stock.findUnique({ where: { id } });
+    const isNewlySold = (!previousStock?.soldDate && updateData.SOLD_DATE);
+
     // Perform update
     const updatedStock = await prisma.stock.update({
       where: { id },
@@ -543,8 +546,29 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
         purchaseSampleDate: updateData.purchaseSampleDate,
         user: currentUser?.username,
         auctionBroker: updateData.AUCTION_BROKER as any,
+        markId: updateData.MARK_ID as string | undefined,
       },
+      include: {
+        factory: true,
+        mark: true,
+      }
     });
+
+    if (isNewlySold && updatedStock.soldRate && updatedStock.soldDate) {
+      const formattedDate = updatedStock.soldDate.toISOString().split('T')[0];
+      const invNoStr = updatedStock.invNo ? updatedStock.invNo.toString() : '';
+      const invStr = updatedStock.inv || '';
+      const markName = updatedStock.mark?.name || '';
+      
+      await prisma.notification.create({
+        data: {
+          title: 'Stock Sold',
+          message: `items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate} on ${formattedDate}`,
+          role: 'staff',
+          metadata: { factoryId: updatedStock.factoryId }
+        }
+      });
+    }
 
     // Return success
 

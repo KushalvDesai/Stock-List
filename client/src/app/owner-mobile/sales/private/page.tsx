@@ -18,7 +18,8 @@ interface StockEntry {
   auction: boolean | null;
   soldDate?: string | null;
   factory?: { name: string } | null;
-  mark?: { name: string } | null;
+  mark?: { id: string, name: string } | null;
+  markId?: string | null;
 }
 
 export default function MobilePrivateSalePage() {
@@ -36,7 +37,8 @@ export default function MobilePrivateSalePage() {
   const [globalBroker, setGlobalBroker] = useState("");
   const [globalBuyer, setGlobalBuyer] = useState("");
   const [globalTransporter, setGlobalTransporter] = useState("");
-  const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string }>>({});
+  const [bulkRowData, setBulkRowData] = useState<Record<string, { soldRate: string, soldInvNo: string, markId: string }>>({});
+  const [marks, setMarks] = useState<any[]>([]);
 
   // Dispatch Message States
   const [isDispatchSetupModalOpen, setIsDispatchSetupModalOpen] = useState(false);
@@ -87,7 +89,27 @@ export default function MobilePrivateSalePage() {
         setIsLoading(false);
       }
     };
+
+    const fetchMarks = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      try {
+        const res = await api.get("/company");
+        const companies = res.data || [];
+        let allMarks: any[] = [];
+        companies.forEach((company: any) => {
+          company.factories?.forEach((factory: any) => {
+            if (factory.marks) {
+              allMarks = [...allMarks, ...factory.marks.map((m: any) => ({ ...m, factoryName: factory.name }))];
+            }
+          });
+        });
+        setMarks(allMarks);
+      } catch (error) {
+        console.error("Failed to fetch marks:", error);
+      }
+    };
     fetchStock();
+    fetchMarks();
   }, []);
 
   const availableStock = useMemo(() => {
@@ -108,9 +130,10 @@ export default function MobilePrivateSalePage() {
   };
 
   const openModal = () => {
-    const initialData: Record<string, { soldRate: string, soldInvNo: string }> = {};
+    const initialData: Record<string, { soldRate: string, soldInvNo: string, markId: string }> = {};
     selectedRowIds.forEach(id => {
-      initialData[id] = { soldRate: "", soldInvNo: "" };
+      const item = stockData.find(s => s.id === id);
+      initialData[id] = { soldRate: "", soldInvNo: "", markId: item?.markId || "" };
     });
     setBulkRowData(initialData);
     setGlobalBroker("");
@@ -157,6 +180,7 @@ export default function MobilePrivateSalePage() {
             SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
             SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
             SOLD_DATE: new Date().toISOString(),
+            MARK_ID: rowInput?.markId || undefined,
           }
         };
       });
@@ -198,6 +222,7 @@ export default function MobilePrivateSalePage() {
           SOLD_RATE: rowInput?.soldRate ? parseFloat(rowInput.soldRate) : undefined,
           SOLD_INV_NO: rowInput?.soldInvNo ? parseInt(rowInput.soldInvNo) : undefined,
           SOLD_DATE: new Date().toISOString(),
+          MARK_ID: rowInput?.markId || undefined,
         });
       });
 
@@ -391,9 +416,23 @@ export default function MobilePrivateSalePage() {
 
                     return (
                       <div key={id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-                        <div className="flex justify-between border-b border-gray-50 pb-2">
+                        <div className="flex justify-between border-b border-gray-50 pb-2 mb-2">
                           <span className="font-bold text-gray-800">{item.mark?.name}</span>
                           <span className="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{item.grade}</span>
+                        </div>
+
+                        <div className="mb-3">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Mark</label>
+                          <select
+                            value={rowData.markId}
+                            onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], markId: e.target.value } }))}
+                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none text-sm font-semibold"
+                          >
+                            <option value="">Select Mark</option>
+                            {marks.map((m: any) => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                          </select>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
