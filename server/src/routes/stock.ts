@@ -75,7 +75,7 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
     const id = req.params.id as string;
     const newData = req.body;
     
-    const stock = await prisma.stock.findUnique({ where: { id } });
+    const stock = await prisma.stock.findUnique({ where: { id }, include: { factory: true } });
     if (!stock) {
       res.status(404).json({ message: 'Stock entry not found' });
       return;
@@ -96,12 +96,23 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
     const title = isAuctionEdit ? 'High Priority: Auction Edit' : 'New Stock Edit Request';
     const message = `Staff member ${currentUser?.username || 'Unknown'} proposed changes to stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'}.`;
 
-    // Create notifications for owner and admin
-    await prisma.notification.createMany({
-      data: [
-        { title, message, role: 'owner' },
-        { title, message, role: 'admin' }
-      ]
+    // Create notifications for owner
+    if (stock.factory?.companyId) {
+      const owners = await prisma.user.findMany({
+        where: { role: 'owner', companyId: stock.factory.companyId }
+      });
+      if (owners.length > 0) {
+        await Promise.all(owners.map(owner => 
+          prisma.notification.create({
+            data: { title, message, role: 'owner', userId: owner.id }
+          })
+        ));
+      }
+    }
+
+    // Admin notification
+    await prisma.notification.create({
+      data: { title, message, role: 'admin' }
     });
 
     res.status(201).json({ message: 'Edit request submitted for owner approval' });
@@ -176,13 +187,23 @@ router.post('/edit-requests/:id/approve', authenticate, authorize(['owner', 'adm
 
     const updatedStock = await prisma.stock.findUnique({ where: { id: editRequest.stockId } });
     if (updatedStock) {
-      await prisma.notification.create({
-        data: {
-          title: 'Edit Request Approved',
-          message: `The edit request by ${editRequest.requestedBy} for stock ${updatedStock.inv || 'N/A'}-${updatedStock.invNo || 'N/A'} was approved.`,
-          role: 'staff'
+      if (updatedStock.factoryId) {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: 'staff', factories: { some: { id: updatedStock.factoryId } } }
+        });
+        if (staffUsers.length > 0) {
+          await Promise.all(staffUsers.map(user => 
+            prisma.notification.create({
+              data: {
+                title: 'Edit Request Approved',
+                message: `The edit request by ${editRequest.requestedBy} for stock ${updatedStock.inv || 'N/A'}-${updatedStock.invNo || 'N/A'} was approved.`,
+                role: 'staff',
+                userId: user.id
+              }
+            })
+          ));
         }
-      });
+      }
     }
 
     res.status(200).json({ message: 'Edit request approved' });
@@ -209,13 +230,23 @@ router.post('/edit-requests/:id/reject', authenticate, authorize(['owner', 'admi
 
     const stock = await prisma.stock.findUnique({ where: { id: editRequest.stockId } });
     if (stock) {
-      await prisma.notification.create({
-        data: {
-          title: 'Edit Request Rejected',
-          message: `The edit request by ${editRequest.requestedBy} for stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'} was rejected.`,
-          role: 'staff'
+      if (stock.factoryId) {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: 'staff', factories: { some: { id: stock.factoryId } } }
+        });
+        if (staffUsers.length > 0) {
+          await Promise.all(staffUsers.map(user => 
+            prisma.notification.create({
+              data: {
+                title: 'Edit Request Rejected',
+                message: `The edit request by ${editRequest.requestedBy} for stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'} was rejected.`,
+                role: 'staff',
+                userId: user.id
+              }
+            })
+          ));
         }
-      });
+      }
     }
 
     res.status(200).json({ message: 'Edit request rejected' });
@@ -560,14 +591,32 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
       const invStr = updatedStock.inv || '';
       const markName = updatedStock.mark?.name || '';
       
-      await prisma.notification.create({
-        data: {
-          title: 'Stock Sold',
-          message: `items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate} on ${formattedDate}`,
-          role: 'staff',
-          metadata: { factoryId: updatedStock.factoryId }
+      const hasOtherInfo = updatedStock.broker || updatedStock.buyer || updatedStock.transporter;
+      
+      const title = hasOtherInfo ? 'Stock Sold' : 'Dispatch Advice Needed';
+      const message = hasOtherInfo
+        ? `items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate} on ${formattedDate}`
+        : `Make dispatch advice for items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate}`;
+      
+      if (updatedStock.factoryId) {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: 'staff', factories: { some: { id: updatedStock.factoryId } } }
+        });
+        
+        if (staffUsers.length > 0) {
+          await Promise.all(staffUsers.map(user => 
+            prisma.notification.create({
+              data: {
+                title,
+                message,
+                role: 'staff',
+                userId: user.id,
+                metadata: { factoryId: updatedStock.factoryId }
+              }
+            })
+          ));
         }
-      });
+      }
     }
 
     // Return success

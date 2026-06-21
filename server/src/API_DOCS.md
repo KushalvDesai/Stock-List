@@ -35,12 +35,6 @@ Registers a new user in the system.
   }
   ```
 - **Response:** `201 Created`
-  ```json
-  {
-    "message": "User registered successfully",
-    "userId": "uuid-string"
-  }
-  ```
 
 ### `POST /login`
 Authenticates a user and returns a JSON Web Token (JWT).
@@ -67,77 +61,166 @@ Authenticates a user and returns a JSON Web Token (JWT).
 
 ---
 
-## 3. Stock Management
+## 3. Company Management
+
+Base Route: `/api/company`
+**Note:** All routes here require a valid JWT token sent in the `Authorization` header as a Bearer token.
+
+### `GET /my-factory`
+Get the current staff member's assigned factories and their marks.
+- **Auth Required:** Yes (`staff`)
+- **Response:** `200 OK` Array of factories.
+
+### `GET /`
+Get companies (isolated to owner).
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK` Array of companies with their factories and marks.
+
+### `POST /`
+Create a new company.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `201 Created`
+
+### `POST /factory`
+Create a new factory within a company.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `201 Created`
+
+### `POST /mark`
+Create a new mark within a factory.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `201 Created`
+
+### `GET /staff`
+Get staff list (isolated to owner's company).
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK` Array of staff users.
+
+### `POST /staff`
+Owner creates new staff members.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `201 Created`
+
+### `PUT /staff/:id/factories`
+Update a staff member's factory assignment.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Request Body:** `{ "factoryIds": ["uuid-1", "uuid-2"] }`
+- **Response:** `200 OK`
+
+### `PUT /staff/:id/password`
+Update a staff member's password.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK`
+
+### `DELETE /staff/:id`
+Delete a staff member.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK`
+
+---
+
+## 4. Stock Management
 
 Base Route: `/api/stock`
 **Note:** All routes here require a valid JWT token sent in the `Authorization` header as a Bearer token.
-`Authorization: Bearer <your_token>`
+
+### `GET /check-duplicate`
+Endpoint to check for duplicate stock entry before submission.
+- **Auth Required:** Yes (`staff`, `owner`, `admin`)
+- **Query Params:** `inv`, `invNo`, `grade`, `markId`
+- **Response:** `200 OK` `{ "exists": true|false, "stock": { ... } }`
+
+### `GET /`
+Fetch all active stock data.
+- **Auth Required:** Yes (`staff`, `owner`, `admin`)
+- **Response:** `200 OK` Array of stock items.
 
 ### `POST /upload`
 Uploads a new stock entry. Creates a record in both the `Stock` and `StockMaster` tables.
-- **Auth Required:** Yes
-- **Allowed Roles:** `staff`, `owner`, `admin`
-- **Request Body:**
-  ```json
-  {
-    "INV": "INV001",
-    "INV_NO": "12345",
-    "GRADE": "A",
-    "TOTAL_BAGS": 100,
-    "BAG_WT": 50.5,
-    "NET_WT": 5050.0,
-    "DOP": "2026-05-27T10:00:00Z",
-    "BROKER": "Broker Name",
-    "BUYER": "Buyer Name",
-    "SOLD_DATE": "2026-06-01T10:00:00Z",
-    "SOLD_RATE": 150.0,
-    "BILL_NO": "B-999",
-    "BILTY_NO": "BLT-111",
-    "PURCHASE_SAMPLE": "Sample A",
-    "PURCHASE_SAMPLE_DATE": "2026-05-25T10:00:00Z"
-  }
-  ```
+- **Auth Required:** Yes (`staff`, `owner`, `admin`)
 - **Response:** `201 Created`
 
-### `DELETE /:id`
-Deletes a specific stock entry from the `Stock` table only.
-- **Auth Required:** Yes
-- **Allowed Roles:** `owner`, `admin`
-- **Response:** `200 OK`
-  ```json
-  {
-    "message": "Stock entry deleted successfully"
-  }
-  ```
+### `POST /:id/edit-request`
+Staff request an edit to a stock entry.
+- **Auth Required:** Yes (`staff`, `owner`, `admin`)
+- **Request Body:** Contains the updated fields.
+- **Response:** `201 Created`
 
-### `POST /:id/request-update-otp`
-Requests a 6-digit OTP to authorize updating a stock entry. Generates the OTP and alerts the owner.
-- **Auth Required:** Yes
-- **Allowed Roles:** `staff`, `owner`
+### `GET /edit-requests/pending`
+Fetch pending edit requests.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK` Array of edit requests.
+
+### `POST /edit-requests/:id/approve`
+Approve an edit request.
+- **Auth Required:** Yes (`owner`, `admin`)
 - **Response:** `200 OK`
-  ```json
-  {
-    "message": "OTP sent to owner successfully"
-  }
-  ```
+
+### `POST /edit-requests/:id/reject`
+Reject an edit request.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK`
 
 ### `PUT /:id`
-Updates an existing stock entry. Requires a valid, unexpired OTP that was generated for this specific stock item.
-- **Auth Required:** Yes
-- **Allowed Roles:** `staff`, `owner`
-- **Request Body:** Same fields as `/upload`, but includes the mandatory `otp` field.
-  ```json
-  {
-    "otp": "123456",
-    "INV": "INV001-Updated",
-    "GRADE": "B"
-    // ... other fields
-  }
-  ```
+Update stock entry. Requires a valid OTP for staff, bypassed for owner/admin.
+- **Auth Required:** Yes (`staff`, `owner`)
 - **Response:** `200 OK`
-  ```json
-  {
-    "message": "Stock entry updated successfully",
-    "stock": { ...updatedStockObject }
-  }
-  ```
+
+### `DELETE /:id`
+Soft delete a specific stock entry (move to recycle bin).
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK`
+
+### `POST /delete-batch`
+Soft delete multiple stock entries at once.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Request Body:** `{ "ids": ["uuid-1", "uuid-2"] }`
+- **Response:** `200 OK`
+
+### `GET /recycle-bin`
+Get soft-deleted stock entries.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Response:** `200 OK` Array of deleted stock.
+
+### `POST /recover-batch`
+Recover multiple deleted stock entries.
+- **Auth Required:** Yes (`owner`, `admin`)
+- **Request Body:** `{ "ids": ["uuid-1"] }`
+- **Response:** `200 OK`
+
+### `POST /:id/request-update-otp`
+Requests a 6-digit OTP to authorize updating a stock entry.
+- **Auth Required:** Yes (`staff`, `owner`)
+- **Response:** `200 OK`
+
+---
+
+## 5. Notifications
+
+Base Route: `/api/notifications`
+
+### `GET /`
+Get notifications for the logged-in user's role.
+- **Auth Required:** Yes
+- **Response:** `200 OK` Array of notifications.
+
+### `PUT /read-all`
+Mark all notifications as read.
+- **Auth Required:** Yes
+- **Response:** `200 OK`
+
+### `PUT /:id/status`
+Update a specific notification's read status.
+- **Auth Required:** Yes
+- **Request Body:** `{ "isRead": true|false }`
+- **Response:** `200 OK`
+
+### `DELETE /clear-all`
+Clear (delete) all notifications for the user's role.
+- **Auth Required:** Yes
+- **Response:** `200 OK`
+
+### `DELETE /:id`
+Delete a specific notification.
+- **Auth Required:** Yes
+- **Response:** `200 OK`

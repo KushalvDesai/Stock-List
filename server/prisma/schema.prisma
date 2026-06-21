@@ -61,6 +61,7 @@ model User {
   companyId String?
   company   Company?  @relation(fields: [companyId], references: [id])
   factories Factory[] @relation("UserFactories")
+  notifications Notification[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -189,6 +190,8 @@ model Notification {
   title     String
   message   String
   role      Role     // To determine which roles see the notification
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   metadata  Json?    // For storing custom payload (like ip, expiresAt)
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
