@@ -169,6 +169,12 @@ export default function PrivateSalePage() {
   };
 
   const submitBulkEdit = async () => {
+    const missingRate = selectedRowIds.some(id => !bulkRowData[id]?.soldRate);
+    if (missingRate) {
+      toast.error("Sold Rate is compulsory for all selected items.");
+      return;
+    }
+    
     setIsSubmittingEdit(true);
     try {
       let combinedMessage = "";

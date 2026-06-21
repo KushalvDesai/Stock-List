@@ -143,6 +143,12 @@ export default function MobilePrivateSalePage() {
   };
 
   const submitSale = async () => {
+    const missingRate = selectedRowIds.some(id => !bulkRowData[id]?.soldRate);
+    if (missingRate) {
+      toast.error("Sold Rate is compulsory for all selected items.");
+      return;
+    }
+    
     setIsSubmitting(true);
     let combinedMessage = "";
 
