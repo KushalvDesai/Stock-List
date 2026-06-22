@@ -43,7 +43,7 @@ export function AppSidebar({ title, links }: AppSidebarProps) {
           {isSidebarOpen && <span className="font-bold text-gray-800 tracking-tight whitespace-nowrap overflow-hidden">{title}</span>}
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors mx-auto"
+            className="p-1.5 rounded-md hover:bg-gray-100 text-slate-800 hover:text-gray-900 transition-colors mx-auto"
           >
             {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
           </button>

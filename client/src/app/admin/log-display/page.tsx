@@ -75,13 +75,13 @@ export default function LogsPage() {
                 <div className="flex gap-2 border-l border-slate-600 pl-6">
                   <button 
                     onClick={() => setActiveTab('server')}
-                    className={`px-3 py-1 rounded-none text-xs font-semibold uppercase tracking-wider transition-none ${activeTab === 'server' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    className={`px-3 py-1 rounded-none text-xs font-semibold uppercase tracking-wider transition-none ${activeTab === 'server' ? 'bg-slate-600 text-white' : 'text-slate-700 hover:bg-slate-700 hover:text-white'}`}
                   >
                     Server
                   </button>
                   <button 
                     onClick={() => setActiveTab('client')}
-                    className={`px-3 py-1 rounded-none text-xs font-semibold uppercase tracking-wider transition-none ${activeTab === 'client' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    className={`px-3 py-1 rounded-none text-xs font-semibold uppercase tracking-wider transition-none ${activeTab === 'client' ? 'bg-slate-600 text-white' : 'text-slate-700 hover:bg-slate-700 hover:text-white'}`}
                   >
                     Client
                   </button>

@@ -83,7 +83,7 @@ export function PwaInstallBanner() {
         </div>
         <div className="flex flex-col text-sm">
           <span className="font-bold">Install the App</span>
-          <span className="text-gray-500 mt-1">
+          <span className="text-slate-800 mt-1">
             Tap <Share size={14} className="inline mx-1" /> then<br/>
             <PlusSquare size={14} className="inline mx-1" /> <strong>Add to Home Screen</strong>
           </span>
@@ -101,7 +101,7 @@ export function PwaInstallBanner() {
         </div>
         <div className="flex flex-col text-sm">
           <span className="font-bold">Install the App</span>
-          <span className="text-gray-500 mt-1">
+          <span className="text-slate-800 mt-1">
             Tap the <strong>Download icon</strong> in the URL bar, or tap Menu (≡) and select <strong>Add to Home screen</strong>.
           </span>
         </div>

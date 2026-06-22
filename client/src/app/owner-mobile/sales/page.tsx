@@ -9,7 +9,7 @@ export default function MobileSalesPage() {
     <div className="p-4 sm:p-8 max-w-2xl mx-auto w-full space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Sales Operations</h2>
-        <p className="text-gray-500 text-sm mt-1">Manage private and auction sales.</p>
+        <p className="text-slate-800 text-sm mt-1">Manage private and auction sales.</p>
       </div>
 
       <div className="space-y-4">
@@ -22,7 +22,7 @@ export default function MobileSalesPage() {
               </div>
               <div>
                 <h3 className="font-bold text-gray-800 text-lg">Private Sale</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Sell directly to buyers</p>
+                <p className="text-xs text-slate-800 mt-0.5">Sell directly to buyers</p>
               </div>
             </div>
             <ArrowRight size={20} className="text-gray-300 group-hover:text-emerald-500 transition-colors" />
@@ -38,7 +38,7 @@ export default function MobileSalesPage() {
               </div>
               <div>
                 <h3 className="font-bold text-gray-800 text-lg">Auction Sale</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Send stock to auction brokers</p>
+                <p className="text-xs text-slate-800 mt-0.5">Send stock to auction brokers</p>
               </div>
             </div>
             <ArrowRight size={20} className="text-gray-300 group-hover:text-amber-500 transition-colors" />

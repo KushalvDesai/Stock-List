@@ -200,7 +200,7 @@ export default function OwnerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded border border-gray-200 p-5 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Stock Entries</p>
+              <p className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-1">Total Stock Entries</p>
               <p className="text-2xl font-bold text-gray-900">{stockData.length}</p>
             </div>
             <div className="w-12 h-12 rounded bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -209,7 +209,7 @@ export default function OwnerDashboard() {
           </div>
           <div className="bg-white rounded border border-gray-200 p-5 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Production (Kg)</p>
+              <p className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-1">Total Production (Kg)</p>
               <p className="text-2xl font-bold text-gray-900">{totalProduction.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -218,7 +218,7 @@ export default function OwnerDashboard() {
           </div>
           <div className="bg-white rounded border border-gray-200 p-5 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Edits</p>
+              <p className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-1">Pending Edits</p>
               <p className="text-2xl font-bold text-gray-900">{editRequests.length}</p>
             </div>
             <div className="w-12 h-12 rounded bg-orange-50 flex items-center justify-center text-orange-600">
@@ -302,7 +302,7 @@ export default function OwnerDashboard() {
           
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-600">
-              <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+              <thead className="text-xs text-slate-800 uppercase bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 font-semibold">Date</th>
                   <th className="px-6 py-3 font-semibold">Requested By</th>
@@ -314,7 +314,7 @@ export default function OwnerDashboard() {
               <tbody className="divide-y divide-gray-100">
                 {editRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 font-medium">
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-800 font-medium">
                       No pending edit requests at this time.
                     </td>
                   </tr>
@@ -346,7 +346,7 @@ export default function OwnerDashboard() {
                                 <div key={key} className="flex gap-2 items-center text-xs">
                                   <span className="font-semibold text-gray-700 capitalize">{key}:</span>
                                   <span className="text-red-500 line-through">{original || 'empty'}</span>
-                                  <span className="text-gray-400">→</span>
+                                  <span className="text-slate-700">→</span>
                                   <span className="text-emerald-600 font-bold">{String(val)}</span>
                                 </div>
                               );

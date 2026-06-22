@@ -113,14 +113,14 @@ export default function MobileAuctionSalePage() {
       {/* Top Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col gap-3 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">
-          <Link href="/owner-mobile/sales" className="p-1 -ml-1 text-gray-400 hover:text-amber-600 transition-colors">
+          <Link href="/owner-mobile/sales" className="p-1 -ml-1 text-slate-700 hover:text-amber-600 transition-colors">
             <ChevronLeft size={24} />
           </Link>
           <h2 className="text-lg font-bold text-gray-800">Auction Sale</h2>
         </div>
         
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700" />
           <input
             type="text"
             placeholder="Search Mark or Inv..."
@@ -140,7 +140,7 @@ export default function MobileAuctionSalePage() {
         ) : auctionStock.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center space-y-3">
             <Gavel size={48} className="text-gray-300" />
-            <p className="text-gray-500 font-medium">No stock assigned for auction</p>
+            <p className="text-slate-800 font-medium">No stock assigned for auction</p>
           </div>
         ) : (
           auctionStock.map(item => {
@@ -162,7 +162,7 @@ export default function MobileAuctionSalePage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-800 text-base leading-tight">{item.mark?.name || "Unknown Mark"}</h3>
-                      <p className="text-xs text-gray-500 font-medium">{item.inv || "-"} / {item.invNo || "-"}</p>
+                      <p className="text-xs text-slate-800 font-medium">{item.inv || "-"} / {item.invNo || "-"}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -172,8 +172,8 @@ export default function MobileAuctionSalePage() {
                   </div>
                 </div>
                 <div className="flex justify-between mt-3 pt-3 border-t border-gray-100/60">
-                  <span className="text-xs text-gray-500 font-medium">Bags: <strong className="text-gray-800">{item.totalBags || 0}</strong></span>
-                  <span className="text-xs text-gray-500 font-medium">Net: <strong className="text-gray-800">{item.netWt?.toFixed(1) || 0}kg</strong></span>
+                  <span className="text-xs text-slate-800 font-medium">Bags: <strong className="text-gray-800">{item.totalBags || 0}</strong></span>
+                  <span className="text-xs text-slate-800 font-medium">Net: <strong className="text-gray-800">{item.netWt?.toFixed(1) || 0}kg</strong></span>
                 </div>
               </div>
             );
@@ -216,7 +216,7 @@ export default function MobileAuctionSalePage() {
             >
               <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
                 <h3 className="font-bold text-lg text-gray-800">Process Auction Sale</h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={() => setIsModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-slate-800">
                   <X size={20} />
                 </button>
               </div>
@@ -244,14 +244,14 @@ export default function MobileAuctionSalePage() {
                         <option value="OTHER">Other</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <ChevronLeft size={16} className="text-gray-400 -rotate-90" />
+                        <ChevronLeft size={16} className="text-slate-700 -rotate-90" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider ml-1">Individual Rates</h4>
+                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider ml-1">Individual Rates</h4>
                   {selectedRowIds.map(id => {
                     const item = stockData.find(s => s.id === id);
                     if (!item) return null;
@@ -261,11 +261,11 @@ export default function MobileAuctionSalePage() {
                       <div key={id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                           <div className="font-bold text-gray-800">{item.mark?.name}</div>
-                          <div className="text-xs text-gray-500 font-medium">{item.inv} / {item.invNo}</div>
+                          <div className="text-xs text-slate-800 font-medium">{item.inv} / {item.invNo}</div>
                         </div>
                         
                         <div className="w-32">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Rate (₹)</label>
+                          <label className="text-[10px] font-bold text-slate-700 uppercase ml-1 block mb-1">Rate (₹)</label>
                           <input 
                             type="number"
                             value={rowData.soldRate}

@@ -101,7 +101,7 @@ export default function MobileOwnerLayout({
               key={item.name}
               href={item.href}
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                isActive ? "text-indigo-800 font-bold" : "text-slate-500 hover:text-slate-800"
+                isActive ? "text-indigo-800 font-bold" : "text-slate-800 hover:text-slate-800"
               } transition-colors`}
             >
               <Icon size={24} className={isActive ? "fill-indigo-100 stroke-[2.5]" : "stroke-2"} />
