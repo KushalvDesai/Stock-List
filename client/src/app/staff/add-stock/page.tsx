@@ -80,6 +80,16 @@ export default function AddStockPage() {
         row.netWt = "";
       }
     }
+
+    if (field === "totalBags" || field === "netWt") {
+      const tb = parseFloat(row.totalBags);
+      const nw = parseFloat(row.netWt);
+      if (!isNaN(tb) && !isNaN(nw)) {
+        row.bagWt = (nw / tb).toFixed(2);
+      } else {
+        row.bagWt = "";
+      }
+    }
     return row;
   };
 
@@ -169,7 +179,7 @@ export default function AddStockPage() {
     // Define exactly the headers that the system expects
     const headers = [
       "MARK",
-      "INV",
+      "INV (UK, C, D)",
       "INV NO",
       "GRADE",
       "TOTAL BAGS",
@@ -237,7 +247,7 @@ export default function AddStockPage() {
           return {
             id: Math.random().toString(36).substring(7),
             markId: foundMark ? foundMark.id : "",
-            inv: row["INV"] ? String(row["INV"]) : "",
+            inv: row["INV (UK, C, D)"] ? String(row["INV"]) : "",
             invNo: row["INV NO"] ? String(row["INV NO"]) : "",
             grade: row["GRADE"] ? String(row["GRADE"]) : "BP",
             totalBags: row["TOTAL BAGS"] ? String(row["TOTAL BAGS"]) : "",
@@ -248,7 +258,7 @@ export default function AddStockPage() {
         });
 
         // Add extra empty rows if imported count is less than 5
-        while (newRows.length < 5) {
+        while (newRows.length < 15) {
           newRows.push(generateEmptyRow());
         }
 
@@ -290,7 +300,7 @@ export default function AddStockPage() {
         <div className="flex justify-between items-end mb-6 bg-white shadow-sm px-6 py-4 rounded-md border border-gray-200">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Bulk Stock Entry</h1>
-            <p className="text-sm text-gray-500 font-medium">
+            <p className="text-sm text-slate-800 font-medium">
               {factories.length > 0
                 ? `Assigned Factories: ${factories.map(f => f.name).join(', ')}`
                 : "No factories assigned."}

@@ -268,7 +268,7 @@ export default function PrivateSalePage() {
         <div className="w-full max-w-[1800px] mx-auto px-8 lg:px-12 pt-8 space-y-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-slate-50 shadow-none px-6 py-4 rounded-none border border-slate-300 gap-4">
             <div>
-              <p className="text-sm text-gray-500 font-medium mb-3">View the entire stock available for private sale.</p>
+              <p className="text-sm text-slate-800 font-medium mb-3">View the entire stock available for private sale.</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={openBulkModal}
@@ -288,7 +288,7 @@ export default function PrivateSalePage() {
 
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date (DOP)</label>
+                <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Date (DOP)</label>
                 <input
                   type="date"
                   value={filterDate}
@@ -298,9 +298,9 @@ export default function PrivateSalePage() {
               </div>
 
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Inv No</label>
+                <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Inv No</label>
                 <div className="relative">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700" />
                   <input
                     type="number"
                     placeholder="Search Inv No"
@@ -312,7 +312,7 @@ export default function PrivateSalePage() {
               </div>
 
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Grade</label>
+                <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Grade</label>
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
@@ -328,7 +328,7 @@ export default function PrivateSalePage() {
               <div className="flex flex-col justify-end h-full mt-5">
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-none transition-colors text-sm font-medium"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-slate-800 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-none transition-colors text-sm font-medium"
                   title="Clear all filters"
                 >
                   <FilterX size={16} />
@@ -373,13 +373,13 @@ export default function PrivateSalePage() {
                 <tbody className="divide-y divide-gray-100">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={19} className="px-4 py-12 text-center text-gray-500 font-medium">
+                      <td colSpan={19} className="px-4 py-12 text-center text-slate-800 font-medium">
                         Loading stock database...
                       </td>
                     </tr>
                   ) : filteredStock.length === 0 ? (
                     <tr>
-                      <td colSpan={19} className="px-4 py-12 text-center text-gray-500 font-medium">
+                      <td colSpan={19} className="px-4 py-12 text-center text-slate-800 font-medium">
                         No stock entries found matching your criteria.
                       </td>
                     </tr>
@@ -488,7 +488,7 @@ export default function PrivateSalePage() {
           >
             <div className="px-6 py-4 border-b border-slate-300 flex justify-between items-center bg-slate-100">
               <h2 className="text-lg font-bold text-slate-700">Mark Selected as Sold ({selectedRowIds.length})</h2>
-              <button onClick={() => setIsBulkEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setIsBulkEditModalOpen(false)} className="text-slate-700 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
@@ -539,7 +539,7 @@ export default function PrivateSalePage() {
                         <div className="font-bold text-slate-800 mb-1">
                           {row.inv || "-"} / {row.invNo || "-"}
                         </div>
-                        <div className="text-gray-500 text-xs font-medium">
+                        <div className="text-slate-800 text-xs font-medium">
                           Grade: {row.grade || "-"} • Bags: {row.totalBags || 0} • Net Wt: {row.netWt || 0}kg
                         </div>
                       </div>
@@ -620,7 +620,7 @@ export default function PrivateSalePage() {
           >
             <div className="px-6 py-4 border-b border-slate-300 flex justify-between items-center bg-slate-100">
               <h2 className="text-lg font-bold text-slate-700">Setup Dispatch Message</h2>
-              <button onClick={() => setIsDispatchSetupModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setIsDispatchSetupModalOpen(false)} className="text-slate-700 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
@@ -676,7 +676,7 @@ export default function PrivateSalePage() {
           >
             <div className="px-6 py-4 border-b border-slate-300 flex justify-between items-center bg-slate-100">
               <h2 className="text-lg font-bold text-slate-700">Dispatch Message</h2>
-              <button onClick={() => setIsSuccessModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setIsSuccessModalOpen(false)} className="text-slate-700 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>

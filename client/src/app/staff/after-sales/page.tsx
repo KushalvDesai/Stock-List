@@ -68,7 +68,7 @@ export default function AfterSalesPage() {
   };
 
   const SortIcon = ({ columnKey }: { columnKey: string }) => {
-    if (sortConfig?.key !== columnKey) return <ArrowUpDown size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />;
+    if (sortConfig?.key !== columnKey) return <ArrowUpDown size={14} className="text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />;
     if (sortConfig.direction === 'asc') return <ArrowUp size={14} className="text-indigo-600 ml-1" />;
     return <ArrowDown size={14} className="text-indigo-600 ml-1" />;
   };
@@ -324,7 +324,7 @@ export default function AfterSalesPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 bg-white shadow-sm px-6 py-4 rounded-md border border-gray-200 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">After Sales Records</h1>
-            <p className="text-sm text-gray-500 font-medium mb-3">Browse previously sold inventory items.</p>
+            <p className="text-sm text-slate-800 font-medium mb-3">Browse previously sold inventory items.</p>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={openBulkModal}
@@ -344,9 +344,9 @@ export default function AfterSalesPage() {
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Factory</label>
+              <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Factory</label>
               <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700" />
                 <input
                   type="text"
                   placeholder="e.g. ABC Factory"
@@ -358,9 +358,9 @@ export default function AfterSalesPage() {
             </div>
 
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Inv</label>
+              <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Search Inv</label>
               <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700" />
                 <input
                   type="text"
                   placeholder="e.g. MK123"
@@ -372,7 +372,7 @@ export default function AfterSalesPage() {
             </div>
 
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Field</label>
+              <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Search Field</label>
               <select
                 value={searchField}
                 onChange={(e) => {
@@ -389,7 +389,7 @@ export default function AfterSalesPage() {
 
             {SEARCH_FIELDS.find(f => f.key === searchField)?.type === 'date' ? (
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date Range</label>
+                <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Date Range</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -397,7 +397,7 @@ export default function AfterSalesPage() {
                     onChange={(e) => setSearchDateFrom(e.target.value)}
                     className="px-3 py-1.5 bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-sm outline-none transition-colors text-sm w-[130px]"
                   />
-                  <span className="text-gray-400">-</span>
+                  <span className="text-slate-700">-</span>
                   <input
                     type="date"
                     value={searchDateTo}
@@ -408,7 +408,7 @@ export default function AfterSalesPage() {
               </div>
             ) : SEARCH_FIELDS.find(f => f.key === searchField)?.type === 'select' ? (
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Select Value</label>
+                <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Select Value</label>
                 <select
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
@@ -422,9 +422,9 @@ export default function AfterSalesPage() {
               </div>
             ) : (
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search Value</label>
+                <label className="text-xs font-semibold text-slate-800 mb-1 uppercase tracking-wider">Search Value</label>
                 <div className="relative">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700" />
                   <input
                     type="text"
                     placeholder="Enter search term..."
@@ -439,7 +439,7 @@ export default function AfterSalesPage() {
             <div className="flex flex-col justify-end h-full mt-5">
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-sm transition-colors text-sm font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-800 hover:text-red-600 hover:bg-red-50 border border-transparent rounded-sm transition-colors text-sm font-medium"
                 title="Clear all filters"
               >
                 <FilterX size={16} />
@@ -463,7 +463,7 @@ export default function AfterSalesPage() {
                           setSelectedRowIds(filteredStock.map(s => s.id));
                         }
                       }}
-                      className="text-gray-500 hover:text-indigo-600 transition-colors"
+                      className="text-slate-800 hover:text-indigo-600 transition-colors"
                     >
                       {selectedRowIds.length === filteredStock.length && filteredStock.length > 0 ? (
                         <CheckSquare size={16} />
@@ -501,13 +501,13 @@ export default function AfterSalesPage() {
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-gray-500 font-medium">
+                    <td colSpan={12} className="px-4 py-12 text-center text-slate-800 font-medium">
                       Loading stock database...
                     </td>
                   </tr>
                 ) : filteredStock.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-gray-500 font-medium">
+                    <td colSpan={12} className="px-4 py-12 text-center text-slate-800 font-medium">
                       No after sales entries found matching your criteria.
                     </td>
                   </tr>
@@ -525,7 +525,7 @@ export default function AfterSalesPage() {
                         <td className="px-4 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                           <button 
                             onClick={() => handleSelectRow(row.id)}
-                            className={`transition-colors ${selectedRowIds.includes(row.id) ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-400'}`}
+                            className={`transition-colors ${selectedRowIds.includes(row.id) ? 'text-indigo-600' : 'text-slate-700 hover:text-indigo-400'}`}
                           >
                             {selectedRowIds.includes(row.id) ? <CheckSquare size={16} /> : <Square size={16} />}
                           </button>
@@ -587,11 +587,11 @@ export default function AfterSalesPage() {
               <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-bold text-slate-800 tracking-tight">Make Dispatch Advice</h2>
-                  <p className="text-sm text-gray-500 mt-1">Fill in dispatch details for the {selectedRowIds.length} selected items.</p>
+                  <p className="text-sm text-slate-800 mt-1">Fill in dispatch details for the {selectedRowIds.length} selected items.</p>
                 </div>
                 <button 
                   onClick={() => setIsBulkEditModalOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-sm transition-colors"
+                  className="p-2 text-slate-700 hover:text-gray-600 hover:bg-gray-200 rounded-sm transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -644,7 +644,7 @@ export default function AfterSalesPage() {
                           <div className="font-bold text-slate-800 mb-1">
                             {row.inv || "-"} / {row.invNo || "-"}
                           </div>
-                          <div className="text-gray-500 text-xs font-medium">
+                          <div className="text-slate-800 text-xs font-medium">
                             Grade: {row.grade || "-"} • Net Wt: {row.netWt || 0}kg • Rate: ₹{row.soldRate || 0}
                           </div>
                         </div>
@@ -707,7 +707,7 @@ export default function AfterSalesPage() {
                 <h2 className="text-lg font-bold text-slate-800 tracking-tight">Setup Dispatch Template</h2>
                 <button 
                   onClick={() => setIsDispatchSetupModalOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-sm transition-colors"
+                  className="p-2 text-slate-700 hover:text-gray-600 hover:bg-gray-200 rounded-sm transition-colors"
                 >
                   <X size={20} />
                 </button>
