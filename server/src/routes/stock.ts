@@ -47,13 +47,25 @@ router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req
   try {
     let whereClause: any = { isDeleted: false };
     if (req.user?.role !== 'admin') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user?.userId },
+        include: { ownedCompanies: true }
+      });
+      
+      let companyIds: string[] = [];
+      if (dbUser?.role === 'owner') {
+        companyIds = dbUser.ownedCompanies.map(c => c.id);
+        if (dbUser.companyId) companyIds.push(dbUser.companyId);
+      } else {
+        if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      }
+
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
       whereClause.factory = {
-        companyId: dbUser.companyId
+        companyId: { in: companyIds }
       };
     }
 
@@ -98,15 +110,11 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
 
     // Create notifications for owner
     if (stock.factory?.companyId) {
-      const owners = await prisma.user.findMany({
-        where: { role: 'owner', companyId: stock.factory.companyId }
-      });
-      if (owners.length > 0) {
-        await Promise.all(owners.map(owner => 
-          prisma.notification.create({
-            data: { title, message, role: 'owner', userId: owner.id }
-          })
-        ));
+      const company = await prisma.company.findUnique({ where: { id: stock.factory.companyId } });
+      if (company?.ownerId) {
+        await prisma.notification.create({
+          data: { title, message, role: 'owner', userId: company.ownerId }
+        });
       }
     }
 
@@ -128,14 +136,25 @@ router.get('/edit-requests/pending', authenticate, authorize(['owner', 'admin'])
     let whereClause: any = { status: 'pending' };
     
     if (req.user?.role !== 'admin') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user?.userId },
+        include: { ownedCompanies: true }
+      });
+      let companyIds: string[] = [];
+      if (dbUser?.role === 'owner') {
+        companyIds = dbUser.ownedCompanies.map(c => c.id);
+        if (dbUser.companyId) companyIds.push(dbUser.companyId);
+      } else {
+        if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      }
+
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
       whereClause.stock = {
         factory: {
-          companyId: dbUser.companyId
+          companyId: { in: companyIds }
         }
       };
     }
@@ -349,8 +368,14 @@ router.delete('/:id', authenticate, authorize(['owner', 'admin']), async (req: A
     }
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (stock.factory?.companyId !== dbUser?.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
+      if (!stock.factory?.companyId || !companyIds.includes(stock.factory.companyId)) {
         res.status(403).json({ message: 'Unauthorized: Cannot delete this stock' });
         return;
       }
@@ -378,11 +403,15 @@ router.post('/delete-batch', authenticate, authorize(['owner', 'admin']), async 
       return;
     }
 
-    let companyId: string | null | undefined = null;
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      companyId = dbUser?.companyId;
-      if (!companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
+      if (companyIds.length === 0) {
         res.status(403).json({ message: 'Unauthorized' });
         return;
       }
@@ -392,7 +421,7 @@ router.post('/delete-batch', authenticate, authorize(['owner', 'admin']), async 
         where: { id: { in: ids } },
         include: { factory: true }
       });
-      const allOwned = stocks.every(s => s.factory?.companyId === companyId);
+      const allOwned = stocks.every(s => s.factory?.companyId && companyIds.includes(s.factory.companyId));
       if (!allOwned) {
         res.status(403).json({ message: 'Unauthorized: You do not own some of the selected items' });
         return;
@@ -416,12 +445,18 @@ router.get('/recycle-bin', authenticate, authorize(['owner', 'admin']), async (r
   try {
     let whereClause: any = { isDeleted: true };
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
-      whereClause.factory = { companyId: dbUser.companyId };
+      whereClause.factory = { companyId: { in: companyIds } };
     }
 
     const deletedItems = await prisma.stock.findMany({
@@ -446,15 +481,19 @@ router.post('/recover-batch', authenticate, authorize(['owner', 'admin']), async
     }
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      const companyId = dbUser?.companyId;
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
 
       // Verify ownership
       const stocks = await prisma.stock.findMany({
         where: { id: { in: ids } },
         include: { factory: true }
       });
-      const allOwned = stocks.every(s => s.factory?.companyId === companyId);
+      const allOwned = stocks.every(s => s.factory?.companyId && companyIds.includes(s.factory.companyId));
       if (!allOwned) {
         res.status(403).json({ message: 'Unauthorized: You do not own some of the selected items' });
         return;

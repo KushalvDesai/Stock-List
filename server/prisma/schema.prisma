@@ -60,6 +60,7 @@ model User {
   role      Role      @default(staff)
   companyId String?
   company   Company?  @relation(fields: [companyId], references: [id])
+  ownedCompanies Company[] @relation("CompanyOwner")
   factories Factory[] @relation("UserFactories")
   notifications Notification[]
   createdAt DateTime  @default(now())
@@ -69,6 +70,8 @@ model User {
 model Company {
   id        String    @id @default(uuid())
   name      String    @unique
+  ownerId   String?
+  owner     User?     @relation("CompanyOwner", fields: [ownerId], references: [id])
   factories Factory[]
   users     User[]
 }
