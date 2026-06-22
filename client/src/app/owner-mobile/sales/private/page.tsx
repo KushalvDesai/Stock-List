@@ -143,6 +143,12 @@ export default function MobilePrivateSalePage() {
   };
 
   const submitSale = async () => {
+    const missingRate = selectedRowIds.some(id => !bulkRowData[id]?.soldRate);
+    if (missingRate) {
+      toast.error("Sold Rate is compulsory for all selected items.");
+      return;
+    }
+    
     setIsSubmitting(true);
     let combinedMessage = "";
 
@@ -255,7 +261,7 @@ export default function MobilePrivateSalePage() {
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col gap-3 sticky top-0 z-10 shadow-sm">
         <div className="flex justify-between items-center w-full">
           <div className="flex items-center gap-3">
-            <Link href="/owner-mobile/sales" className="p-1 -ml-1 text-gray-400 hover:text-indigo-600 transition-colors">
+            <Link href="/owner-mobile/sales" className="p-1 -ml-1 text-slate-700 hover:text-indigo-600 transition-colors">
               <ChevronLeft size={24} />
             </Link>
             <h2 className="text-lg font-bold text-gray-800">Private Sale</h2>
@@ -269,7 +275,7 @@ export default function MobilePrivateSalePage() {
         </div>
 
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700" />
           <input
             type="text"
             placeholder="Search Mark or Inv..."
@@ -289,7 +295,7 @@ export default function MobilePrivateSalePage() {
         ) : availableStock.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center space-y-3">
             <Package size={48} className="text-gray-300" />
-            <p className="text-gray-500 font-medium">No available stock</p>
+            <p className="text-slate-800 font-medium">No available stock</p>
           </div>
         ) : (
           availableStock.map(item => {
@@ -313,7 +319,7 @@ export default function MobilePrivateSalePage() {
                     )}
                     <div>
                       <h3 className="font-bold text-gray-800 text-base leading-tight">{item.mark?.name || "Unknown Mark"}</h3>
-                      <p className="text-xs text-gray-500 font-medium">{item.inv || "-"} / {item.invNo || "-"}</p>
+                      <p className="text-xs text-slate-800 font-medium">{item.inv || "-"} / {item.invNo || "-"}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -323,8 +329,8 @@ export default function MobilePrivateSalePage() {
                   </div>
                 </div>
                 <div className="flex justify-between mt-3 pt-3 border-t border-gray-100/60">
-                  <span className="text-xs text-gray-500 font-medium">Bags: <strong className="text-gray-800">{item.totalBags || 0}</strong></span>
-                  <span className="text-xs text-gray-500 font-medium">Net: <strong className="text-gray-800">{item.netWt?.toFixed(1) || 0}kg</strong></span>
+                  <span className="text-xs text-slate-800 font-medium">Bags: <strong className="text-gray-800">{item.totalBags || 0}</strong></span>
+                  <span className="text-xs text-slate-800 font-medium">Net: <strong className="text-gray-800">{item.netWt?.toFixed(1) || 0}kg</strong></span>
                 </div>
               </div>
             );
@@ -367,7 +373,7 @@ export default function MobilePrivateSalePage() {
             >
               <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
                 <h3 className="font-bold text-lg text-gray-800">Process Private Sale</h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={() => setIsModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-slate-800">
                   <X size={20} />
                 </button>
               </div>
@@ -408,7 +414,7 @@ export default function MobilePrivateSalePage() {
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider ml-1">Individual Details</h4>
+                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider ml-1">Individual Details</h4>
                   {selectedRowIds.map(id => {
                     const item = stockData.find(s => s.id === id);
                     if (!item) return null;
@@ -422,7 +428,7 @@ export default function MobilePrivateSalePage() {
                         </div>
 
                         <div className="mb-3">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Mark</label>
+                          <label className="text-[10px] font-bold text-slate-700 uppercase ml-1 block mb-1">Mark</label>
                           <select
                             value={rowData.markId}
                             onChange={(e) => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], markId: e.target.value } }))}
@@ -437,7 +443,7 @@ export default function MobilePrivateSalePage() {
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Rate (₹)</label>
+                            <label className="text-[10px] font-bold text-slate-700 uppercase ml-1 block mb-1">Rate (₹)</label>
                             <input
                               type="number"
                               value={rowData.soldRate}
@@ -447,7 +453,7 @@ export default function MobilePrivateSalePage() {
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Sold Inv No</label>
+                            <label className="text-[10px] font-bold text-slate-700 uppercase ml-1 block mb-1">Sold Inv No</label>
                             <div className="flex gap-1">
                               <input
                                 type="number"
@@ -458,7 +464,7 @@ export default function MobilePrivateSalePage() {
                               />
                               <button
                                 onClick={() => setBulkRowData(prev => ({ ...prev, [id]: { ...prev[id], soldInvNo: String(item.invNo || "") } }))}
-                                className="bg-slate-100 text-gray-500 p-2 rounded-xl border border-slate-200 active:bg-slate-200"
+                                className="bg-slate-100 text-slate-800 p-2 rounded-xl border border-slate-200 active:bg-slate-200"
                               >
                                 <Copy size={16} />
                               </button>
@@ -498,13 +504,13 @@ export default function MobilePrivateSalePage() {
             >
               <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
                 <h3 className="font-bold text-lg text-gray-800">Setup Dispatch Message</h3>
-                <button onClick={() => setIsDispatchSetupModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={() => setIsDispatchSetupModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-slate-800">
                   <X size={20} />
                 </button>
               </div>
 
               <div className="overflow-y-auto flex-1 p-6 bg-slate-50">
-                <p className="text-xs font-medium text-gray-500 mb-3">Tap a variable to insert it</p>
+                <p className="text-xs font-medium text-slate-800 mb-3">Tap a variable to insert it</p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {['[factory]', '[mark]', '[inv+invNo]', '[grade]', '[soldRate]', '[broker]', '[buyer]', '[transporter]'].map(v => (
                     <button
@@ -554,7 +560,7 @@ export default function MobilePrivateSalePage() {
             >
               <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
                 <h3 className="font-bold text-lg text-gray-800">Dispatch Message</h3>
-                <button onClick={() => setIsSuccessModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={() => setIsSuccessModalOpen(false)} className="p-1 bg-gray-100 rounded-full text-slate-800">
                   <X size={20} />
                 </button>
               </div>

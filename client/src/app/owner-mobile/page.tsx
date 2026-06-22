@@ -164,14 +164,14 @@ export default function MobileOwnerDashboard() {
       {/* Header section (if page-specific title needed) */}
       <div className="mb-2">
         <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Overview</h2>
-        <p className="text-gray-500 text-sm mt-1">Welcome back to the dashboard.</p>
+        <p className="text-slate-800 text-sm mt-1">Welcome back to the dashboard.</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Entries</p>
+            <p className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Total Entries</p>
             <p className="text-2xl font-bold text-gray-900">{stockData.length}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -180,7 +180,7 @@ export default function MobileOwnerDashboard() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Prod (Kg)</p>
+            <p className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Total Prod (Kg)</p>
             <p className="text-2xl font-bold text-gray-900">{totalProduction.toLocaleString()}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -189,7 +189,7 @@ export default function MobileOwnerDashboard() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pending Edits</p>
+            <p className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Pending Edits</p>
             <p className="text-2xl font-bold text-gray-900">{editRequests.length}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
@@ -273,7 +273,7 @@ export default function MobileOwnerDashboard() {
         
         <div className="divide-y divide-gray-100">
           {editRequests.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 font-medium">
+            <div className="p-8 text-center text-slate-800 font-medium">
               No pending edit requests.
             </div>
           ) : (
@@ -288,7 +288,7 @@ export default function MobileOwnerDashboard() {
                         <span className="font-bold text-gray-900 text-sm">{req.stock.inv || 'N/A'} - {req.stock.invNo || 'N/A'}</span>
                         <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{req.stock.grade}</span>
                       </div>
-                      <p className="text-xs text-gray-500 font-medium">
+                      <p className="text-xs text-slate-800 font-medium">
                         By {req.requestedBy} • {new Date(req.createdAt).toLocaleDateString('en-GB')}
                       </p>
                     </div>
@@ -308,7 +308,7 @@ export default function MobileOwnerDashboard() {
                             <span className="font-bold text-gray-600 uppercase tracking-wider text-[10px]">{key}</span>
                             <div className="flex gap-2 items-center">
                               <span className="text-red-500 line-through font-medium">{original || 'empty'}</span>
-                              <span className="text-gray-400">→</span>
+                              <span className="text-slate-700">→</span>
                               <span className="text-emerald-600 font-bold">{String(val)}</span>
                             </div>
                           </div>

@@ -64,10 +64,12 @@ export function NotificationDropdown() {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  const filteredNotifications = notifications.filter(n => n.title !== 'Dispatch Advice Needed');
+
   return (
     <div className="relative">
       <NotificationButton 
-        count={notifications.filter(n => !n.isRead).length} 
+        count={filteredNotifications.filter(n => !n.isRead).length} 
         onClick={handleToggleOpen}
         className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 shadow-sm"
       />
@@ -76,26 +78,26 @@ export function NotificationDropdown() {
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 className="font-semibold text-gray-800">Notifications</h3>
             <div className="flex items-center gap-3">
-              {notifications.length > 0 && (
+              {filteredNotifications.length > 0 && (
                 <button 
                   onClick={handleClearAll}
-                  className="text-xs font-medium text-gray-500 hover:text-red-600 transition-colors"
+                  className="text-xs font-medium text-slate-800 hover:text-red-600 transition-colors"
                 >
                   Clear All
                 </button>
               )}
               <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
-                {notifications.length} Total
+                {filteredNotifications.length} Total
               </span>
             </div>
           </div>
           <div className="max-h-80 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-500">
+            {filteredNotifications.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-800">
                 No notifications yet!
               </div>
             ) : (
-              notifications.map((notif) => {
+              filteredNotifications.map((notif) => {
                 const metadata = notif.metadata as any;
                 const expiresAt = metadata?.expiresAt ? new Date(metadata.expiresAt) : null;
                 const timeRemaining = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 60000)) : 0;
@@ -111,7 +113,7 @@ export function NotificationDropdown() {
                             Ban expires in: {timeRemaining} mins
                           </p>
                         )}
-                        <p className="text-[10px] text-gray-400 mt-2">
+                        <p className="text-[10px] text-slate-700 mt-2">
                           {new Date(notif.createdAt).toLocaleString()}
                         </p>
                       </div>

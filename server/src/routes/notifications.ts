@@ -7,13 +7,20 @@ const router = Router();
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userRole = req.user?.role;
-    if (!userRole) {
+    const userId = req.user?.userId;
+    if (!userRole || !userId) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
     const notifications = await prisma.notification.findMany({
-      where: { role: userRole as any },
+      where: { 
+        role: userRole as any,
+        OR: [
+          { userId: null },
+          { userId }
+        ]
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -28,13 +35,21 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.put('/read-all', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userRole = req.user?.role;
-    if (!userRole) {
+    const userId = req.user?.userId;
+    if (!userRole || !userId) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
     await prisma.notification.updateMany({
-      where: { role: userRole as any, isRead: false },
+      where: { 
+        role: userRole as any, 
+        isRead: false,
+        OR: [
+          { userId: null },
+          { userId }
+        ]
+      },
       data: { isRead: true },
     });
     res.status(200).json({ message: 'All notifications marked as read' });
@@ -68,12 +83,20 @@ router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response):
 router.delete('/clear-all', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userRole = req.user?.role;
-    if (!userRole) {
+    const userId = req.user?.userId;
+    if (!userRole || !userId) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
     await prisma.notification.deleteMany({
-      where: { role: userRole as any },
+      where: { 
+        role: userRole as any,
+        title: { not: 'Dispatch Advice Needed' },
+        OR: [
+          { userId: null },
+          { userId }
+        ]
+      },
     });
     res.status(200).json({ message: 'All notifications cleared' });
   } catch (error) {
@@ -82,9 +105,17 @@ router.delete('/clear-all', authenticate, async (req: AuthRequest, res: Response
   }
 });
 
-router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
+    
+    // Prevent deletion of Dispatch Advice Needed notifications
+    const notification = await prisma.notification.findUnique({ where: { id } });
+    if (notification && notification.title === 'Dispatch Advice Needed') {
+      res.status(403).json({ message: 'Cannot delete high priority dispatch advice notifications' });
+      return;
+    }
+    
     await prisma.notification.delete({
       where: { id },
     });

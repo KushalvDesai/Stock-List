@@ -130,7 +130,7 @@ export function MobileNotificationDropdown() {
               {notifications.length > 0 && (
                 <button 
                   onClick={handleClearAll}
-                  className="text-xs font-bold text-gray-500 hover:text-red-600"
+                  className="text-xs font-bold text-slate-800 hover:text-red-600"
                 >
                   Clear All
                 </button>
@@ -146,7 +146,7 @@ export function MobileNotificationDropdown() {
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+              <div className="flex flex-col items-center justify-center h-40 text-slate-800">
                 <Bell size={40} className="text-gray-300 mb-3" />
                 <p className="font-medium">No notifications yet.</p>
               </div>
@@ -167,7 +167,7 @@ export function MobileNotificationDropdown() {
                             Ban expires in: {timeRemaining} mins
                           </p>
                         )}
-                        <p className="text-[10px] text-gray-400 font-medium mt-3">
+                        <p className="text-[10px] text-slate-700 font-medium mt-3">
                           {new Date(notif.createdAt).toLocaleString()}
                         </p>
                       </div>
@@ -175,7 +175,7 @@ export function MobileNotificationDropdown() {
                       <div className="flex flex-col gap-2">
                         <button 
                           onClick={() => handleToggleNotificationStatus(notif.id, notif.isRead)}
-                          className={`p-2 rounded-xl transition-colors ${notif.isRead ? 'bg-emerald-50 text-emerald-600' : 'bg-white border border-gray-200 text-gray-400'}`}
+                          className={`p-2 rounded-xl transition-colors ${notif.isRead ? 'bg-emerald-50 text-emerald-600' : 'bg-white border border-gray-200 text-slate-700'}`}
                         >
                           {notif.isRead ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                         </button>

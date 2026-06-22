@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/lib/axios";
 import { useToasts } from "@/components/toast";
-import { LogOut, Building2, Factory, Tag, Users, Gavel } from "lucide-react";
+import { LogOut, Building2, Factory, Tag, Users, Gavel, Edit2, Trash2 } from "lucide-react";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useAuthStore } from "@/store/authStore";
 import { AppSidebar, SidebarLink } from "@/components/app-sidebar";
@@ -150,6 +150,75 @@ export default function CompanyManagement() {
     }
   };
 
+  const handleEditCompany = async (id: string, currentName: string) => {
+    const newName = prompt("Enter new company name:", currentName);
+    if (!newName || newName === currentName) return;
+    try {
+      await api.put(`/company/${id}`, { name: newName });
+      toast.success("Company updated!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update company");
+    }
+  };
+
+  const handleDeleteCompany = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this company? All associated data will be removed!")) return;
+    try {
+      await api.delete(`/company/${id}`);
+      toast.success("Company deleted!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete company");
+    }
+  };
+
+  const handleEditFactory = async (id: string, currentName: string) => {
+    const newName = prompt("Enter new factory name:", currentName);
+    if (!newName || newName === currentName) return;
+    try {
+      await api.put(`/company/factory/${id}`, { name: newName });
+      toast.success("Factory updated!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update factory");
+    }
+  };
+
+  const handleDeleteFactory = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this factory? All associated data will be removed!")) return;
+    try {
+      await api.delete(`/company/factory/${id}`);
+      toast.success("Factory deleted!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete factory");
+    }
+  };
+
+  const handleEditMark = async (id: string, currentName: string) => {
+    const newName = prompt("Enter new mark name:", currentName);
+    if (!newName || newName === currentName) return;
+    try {
+      await api.put(`/company/mark/${id}`, { name: newName });
+      toast.success("Mark updated!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update mark");
+    }
+  };
+
+  const handleDeleteMark = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this mark?")) return;
+    try {
+      await api.delete(`/company/mark/${id}`);
+      toast.success("Mark deleted!");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete mark");
+    }
+  };
+
   const allFactories = companies.flatMap(c => c.factories);
 
   if (isLoading) {
@@ -267,25 +336,39 @@ export default function CompanyManagement() {
             <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
               {companies.map(company => (
                 <div key={company.id} className="border border-gray-100 rounded-none p-4 bg-slate-100/50">
-                  <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3">
-                    <Building2 size={16} className="text-gray-400" /> {company.name}
-                  </h3>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                      <Building2 size={16} className="text-slate-700" /> {company.name}
+                    </h3>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEditCompany(company.id, company.name)} className="text-slate-700 hover:text-indigo-600"><Edit2 size={14} /></button>
+                      <button onClick={() => handleDeleteCompany(company.id)} className="text-slate-700 hover:text-red-600"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
                   {company.factories.length === 0 ? (
-                    <p className="text-xs text-gray-500 italic pl-6">No factories</p>
+                    <p className="text-xs text-slate-800 italic pl-6">No factories</p>
                   ) : (
                     <div className="space-y-4 pl-4 border-l-2 border-indigo-100 ml-2">
                       {company.factories.map((factory: any) => (
                         <div key={factory.id} className="relative">
-                          <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2 mb-2">
-                            <Factory size={14} className="text-indigo-400" /> {factory.name}
-                          </h4>
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                              <Factory size={14} className="text-indigo-400" /> {factory.name}
+                            </h4>
+                            <div className="flex gap-2">
+                              <button onClick={() => handleEditFactory(factory.id, factory.name)} className="text-slate-700 hover:text-indigo-600"><Edit2 size={12} /></button>
+                              <button onClick={() => handleDeleteFactory(factory.id)} className="text-slate-700 hover:text-red-600"><Trash2 size={12} /></button>
+                            </div>
+                          </div>
                           {factory.marks.length === 0 ? (
-                            <p className="text-xs text-gray-500 italic pl-6">No marks</p>
+                            <p className="text-xs text-slate-800 italic pl-6">No marks</p>
                           ) : (
                             <div className="flex flex-wrap gap-2 pl-6">
                               {factory.marks.map((mark: any) => (
-                                <span key={mark.id} className="inline-flex items-center gap-1 bg-slate-50 border border-slate-300 px-2 py-1 rounded-none text-xs font-medium text-gray-600 shadow-none">
+                                <span key={mark.id} className="inline-flex items-center gap-1 bg-slate-50 border border-slate-300 px-2 py-1 rounded-none text-xs font-medium text-gray-600 shadow-none group">
                                   <Tag size={10} /> {mark.name}
+                                  <button onClick={() => handleEditMark(mark.id, mark.name)} className="ml-1 text-slate-700 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 size={10} /></button>
+                                  <button onClick={() => handleDeleteMark(mark.id)} className="ml-1 text-slate-700 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={10} /></button>
                                 </span>
                               ))}
                             </div>
@@ -297,7 +380,7 @@ export default function CompanyManagement() {
                 </div>
               ))}
               {companies.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-8">No companies registered yet.</p>
+                <p className="text-sm text-slate-800 text-center py-8">No companies registered yet.</p>
               )}
             </div>
           </div>
@@ -356,7 +439,7 @@ export default function CompanyManagement() {
                    </div>
                    
                    <div className="bg-slate-50 border border-slate-300 rounded-none p-3 max-h-40 overflow-y-auto space-y-2">
-                     <p className="text-xs text-gray-500 font-semibold mb-2">Assign Factories:</p>
+                     <p className="text-xs text-slate-800 font-semibold mb-2">Assign Factories:</p>
                      {allFactories.map(f => {
                        const isAssigned = user.factories?.some((uf: any) => uf.id === f.id);
                        return (
@@ -377,12 +460,12 @@ export default function CompanyManagement() {
                          </label>
                        );
                      })}
-                     {allFactories.length === 0 && <p className="text-xs text-gray-400">No factories available</p>}
+                     {allFactories.length === 0 && <p className="text-xs text-slate-700">No factories available</p>}
                    </div>
                  </div>
                ))}
                {staff.length === 0 && (
-                 <p className="text-sm text-gray-500 text-center py-8">No staff members found.</p>
+                 <p className="text-sm text-slate-800 text-center py-8">No staff members found.</p>
                )}
              </div>
           </div>

@@ -39,11 +39,11 @@ router.get('/', authenticate, authorize(['owner', 'admin']), async (req: AuthReq
     let whereClause = {};
     if (req.user?.role === 'owner') {
       const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      if (!dbUser) {
         res.status(200).json([]);
         return;
       }
-      whereClause = { id: dbUser.companyId };
+      whereClause = { ownerId: dbUser.id };
     }
 
     const companies = await prisma.company.findMany({
@@ -71,14 +71,17 @@ router.post('/', authenticate, authorize(['owner', 'admin']), async (req: AuthRe
       res.status(400).json({ message: 'Company name is required' });
       return;
     }
-    const company = await prisma.company.create({ data: { name } });
+    const company = await prisma.company.create({ data: { name, ownerId: req.user?.role === 'owner' ? req.user.userId : null } });
 
-    // Instantly link the owner to their newly created company
+    // Instantly link the owner to their newly created company, if it's their first company or keep it as primary
     if (req.user?.role === 'owner') {
-      await prisma.user.update({
-        where: { id: req.user.userId },
-        data: { companyId: company.id }
-      });
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      if (dbUser && !dbUser.companyId) {
+        await prisma.user.update({
+          where: { id: req.user.userId },
+          data: { companyId: company.id }
+        });
+      }
     }
 
     res.status(201).json(company);
@@ -102,12 +105,11 @@ router.post('/factory', authenticate, authorize(['owner', 'admin']), async (req:
     }
     let targetCompanyId = companyId;
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (!dbUser || !dbUser.companyId) {
-        res.status(403).json({ message: 'You must create a company first.' });
+      const company = await prisma.company.findUnique({ where: { id: companyId } });
+      if (!company || company.ownerId !== req.user.userId) {
+        res.status(403).json({ message: 'You do not own this company.' });
         return;
       }
-      targetCompanyId = dbUser.companyId; // Force it to their company, ignoring the body payload
     }
 
     const factory = await prisma.factory.create({ data: { name, companyId: targetCompanyId } });
@@ -153,12 +155,18 @@ router.get('/staff', authenticate, authorize(['owner', 'admin']), async (req: Au
     let whereClause: any = { role: 'staff' };
     
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
-      whereClause.companyId = dbUser.companyId;
+      whereClause.companyId = { in: companyIds };
     }
 
     const staff = await prisma.user.findMany({
@@ -229,17 +237,22 @@ router.put('/staff/:id/factories', authenticate, authorize(['owner', 'admin']), 
     const { factoryIds } = req.body; 
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
       
       const staffMember = await prisma.user.findUnique({ where: { id } });
-      if (!staffMember || staffMember.companyId !== dbUser?.companyId) {
+      if (!staffMember || !staffMember.companyId || !companyIds.includes(staffMember.companyId)) {
         res.status(403).json({ message: 'Unauthorized: Staff member does not belong to your company' });
         return;
       }
 
       if (factoryIds && factoryIds.length > 0) {
         const factories = await prisma.factory.findMany({ where: { id: { in: factoryIds } } });
-        const allMatch = factories.every(f => f.companyId === dbUser?.companyId);
+        const allMatch = factories.every(f => companyIds.includes(f.companyId));
         if (!allMatch || factories.length !== factoryIds.length) {
           res.status(403).json({ message: 'Unauthorized: One or more factories do not belong to your company' });
           return;
@@ -273,9 +286,15 @@ router.put('/staff/:id/password', authenticate, authorize(['owner', 'admin']), a
     }
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
       const staffMember = await prisma.user.findUnique({ where: { id } });
-      if (!staffMember || staffMember.companyId !== dbUser?.companyId || staffMember.role !== 'staff') {
+      if (!staffMember || !staffMember.companyId || !companyIds.includes(staffMember.companyId) || staffMember.role !== 'staff') {
         res.status(403).json({ message: 'Unauthorized: Cannot modify this user' });
         return;
       }
@@ -300,9 +319,12 @@ router.delete('/staff/:id', authenticate, authorize(['owner', 'admin']), async (
     const id = req.params.id as string;
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
       const staffMember = await prisma.user.findUnique({ where: { id } });
-      if (!staffMember || staffMember.companyId !== dbUser?.companyId || staffMember.role !== 'staff') {
+      if (!staffMember || !staffMember.companyId || !companyIds.includes(staffMember.companyId) || staffMember.role !== 'staff') {
         res.status(403).json({ message: 'Unauthorized: Cannot delete this user' });
         return;
       }
@@ -313,6 +335,126 @@ router.delete('/staff/:id', authenticate, authorize(['owner', 'admin']), async (
   } catch (error) {
     console.error('Error deleting staff:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Edit Company
+router.put('/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name } = req.body;
+    const id = req.params.id as string;
+    if (!name) { res.status(400).json({ message: 'Company name is required' }); return; }
+    
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      if (!companyIds.includes(id)) { res.status(403).json({ message: 'Unauthorized' }); return; }
+    }
+    await prisma.company.update({ where: { id }, data: { name } });
+    res.status(200).json({ message: 'Company updated successfully' });
+  } catch (error: any) {
+    if (error.code === 'P2002') res.status(400).json({ message: 'Company name already exists' });
+    else res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete Company
+router.delete('/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      if (!companyIds.includes(id)) { res.status(403).json({ message: 'Unauthorized' }); return; }
+    }
+    await prisma.company.delete({ where: { id } });
+    res.status(200).json({ message: 'Company deleted successfully' });
+  } catch (error: any) {
+    if (error.code === 'P2003') res.status(400).json({ message: 'Cannot delete company because it is being used (e.g. contains stock or users).' });
+    else res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Edit Factory
+router.put('/factory/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name } = req.body;
+    const id = req.params.id as string;
+    if (!name) { res.status(400).json({ message: 'Factory name is required' }); return; }
+    
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      const factory = await prisma.factory.findUnique({ where: { id } });
+      if (!factory || !companyIds.includes(factory.companyId)) { res.status(403).json({ message: 'Unauthorized' }); return; }
+    }
+    await prisma.factory.update({ where: { id }, data: { name } });
+    res.status(200).json({ message: 'Factory updated successfully' });
+  } catch (error: any) {
+    if (error.code === 'P2002') res.status(400).json({ message: 'Factory name already exists' });
+    else res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete Factory
+router.delete('/factory/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      const factory = await prisma.factory.findUnique({ where: { id } });
+      if (!factory || !companyIds.includes(factory.companyId)) { res.status(403).json({ message: 'Unauthorized' }); return; }
+    }
+    await prisma.factory.delete({ where: { id } });
+    res.status(200).json({ message: 'Factory deleted successfully' });
+  } catch (error: any) {
+    if (error.code === 'P2003') res.status(400).json({ message: 'Cannot delete factory because it is being used.' });
+    else res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Edit Mark
+router.put('/mark/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name } = req.body;
+    const id = req.params.id as string;
+    if (!name) { res.status(400).json({ message: 'Mark name is required' }); return; }
+    
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      const mark = await prisma.mark.findUnique({ where: { id }, include: { factory: true } });
+      if (!mark || !companyIds.includes(mark.factory.companyId)) { res.status(403).json({ message: 'Unauthorized' }); return; }
+    }
+    await prisma.mark.update({ where: { id }, data: { name } });
+    res.status(200).json({ message: 'Mark updated successfully' });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete Mark
+router.delete('/mark/:id', authenticate, authorize(['owner', 'admin']), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    if (req.user?.role === 'owner') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId }, include: { ownedCompanies: true } });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      const mark = await prisma.mark.findUnique({ where: { id }, include: { factory: true } });
+      if (!mark || !companyIds.includes(mark.factory.companyId)) { res.status(403).json({ message: 'Unauthorized' }); return; }
+    }
+    await prisma.mark.delete({ where: { id } });
+    res.status(200).json({ message: 'Mark deleted successfully' });
+  } catch (error: any) {
+    if (error.code === 'P2003') res.status(400).json({ message: 'Cannot delete mark because it is being used.' });
+    else res.status(500).json({ message: 'Internal server error' });
   }
 });
 

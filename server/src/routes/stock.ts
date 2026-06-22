@@ -47,13 +47,25 @@ router.get('/', authenticate, authorize(['staff', 'owner', 'admin']), async (req
   try {
     let whereClause: any = { isDeleted: false };
     if (req.user?.role !== 'admin') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user?.userId },
+        include: { ownedCompanies: true }
+      });
+      
+      let companyIds: string[] = [];
+      if (dbUser?.role === 'owner') {
+        companyIds = dbUser.ownedCompanies.map(c => c.id);
+        if (dbUser.companyId) companyIds.push(dbUser.companyId);
+      } else {
+        if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      }
+
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
       whereClause.factory = {
-        companyId: dbUser.companyId
+        companyId: { in: companyIds }
       };
     }
 
@@ -75,7 +87,7 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
     const id = req.params.id as string;
     const newData = req.body;
     
-    const stock = await prisma.stock.findUnique({ where: { id } });
+    const stock = await prisma.stock.findUnique({ where: { id }, include: { factory: true } });
     if (!stock) {
       res.status(404).json({ message: 'Stock entry not found' });
       return;
@@ -96,12 +108,19 @@ router.post('/:id/edit-request', authenticate, authorize(['staff', 'owner', 'adm
     const title = isAuctionEdit ? 'High Priority: Auction Edit' : 'New Stock Edit Request';
     const message = `Staff member ${currentUser?.username || 'Unknown'} proposed changes to stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'}.`;
 
-    // Create notifications for owner and admin
-    await prisma.notification.createMany({
-      data: [
-        { title, message, role: 'owner' },
-        { title, message, role: 'admin' }
-      ]
+    // Create notifications for owner
+    if (stock.factory?.companyId) {
+      const company = await prisma.company.findUnique({ where: { id: stock.factory.companyId } });
+      if (company?.ownerId) {
+        await prisma.notification.create({
+          data: { title, message, role: 'owner', userId: company.ownerId }
+        });
+      }
+    }
+
+    // Admin notification
+    await prisma.notification.create({
+      data: { title, message, role: 'admin' }
     });
 
     res.status(201).json({ message: 'Edit request submitted for owner approval' });
@@ -117,14 +136,25 @@ router.get('/edit-requests/pending', authenticate, authorize(['owner', 'admin'])
     let whereClause: any = { status: 'pending' };
     
     if (req.user?.role !== 'admin') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user?.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user?.userId },
+        include: { ownedCompanies: true }
+      });
+      let companyIds: string[] = [];
+      if (dbUser?.role === 'owner') {
+        companyIds = dbUser.ownedCompanies.map(c => c.id);
+        if (dbUser.companyId) companyIds.push(dbUser.companyId);
+      } else {
+        if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+      }
+
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
       whereClause.stock = {
         factory: {
-          companyId: dbUser.companyId
+          companyId: { in: companyIds }
         }
       };
     }
@@ -176,13 +206,23 @@ router.post('/edit-requests/:id/approve', authenticate, authorize(['owner', 'adm
 
     const updatedStock = await prisma.stock.findUnique({ where: { id: editRequest.stockId } });
     if (updatedStock) {
-      await prisma.notification.create({
-        data: {
-          title: 'Edit Request Approved',
-          message: `The edit request by ${editRequest.requestedBy} for stock ${updatedStock.inv || 'N/A'}-${updatedStock.invNo || 'N/A'} was approved.`,
-          role: 'staff'
+      if (updatedStock.factoryId) {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: 'staff', factories: { some: { id: updatedStock.factoryId } } }
+        });
+        if (staffUsers.length > 0) {
+          await Promise.all(staffUsers.map(user => 
+            prisma.notification.create({
+              data: {
+                title: 'Edit Request Approved',
+                message: `The edit request by ${editRequest.requestedBy} for stock ${updatedStock.inv || 'N/A'}-${updatedStock.invNo || 'N/A'} was approved.`,
+                role: 'staff',
+                userId: user.id
+              }
+            })
+          ));
         }
-      });
+      }
     }
 
     res.status(200).json({ message: 'Edit request approved' });
@@ -209,13 +249,23 @@ router.post('/edit-requests/:id/reject', authenticate, authorize(['owner', 'admi
 
     const stock = await prisma.stock.findUnique({ where: { id: editRequest.stockId } });
     if (stock) {
-      await prisma.notification.create({
-        data: {
-          title: 'Edit Request Rejected',
-          message: `The edit request by ${editRequest.requestedBy} for stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'} was rejected.`,
-          role: 'staff'
+      if (stock.factoryId) {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: 'staff', factories: { some: { id: stock.factoryId } } }
+        });
+        if (staffUsers.length > 0) {
+          await Promise.all(staffUsers.map(user => 
+            prisma.notification.create({
+              data: {
+                title: 'Edit Request Rejected',
+                message: `The edit request by ${editRequest.requestedBy} for stock ${stock.inv || 'N/A'}-${stock.invNo || 'N/A'} was rejected.`,
+                role: 'staff',
+                userId: user.id
+              }
+            })
+          ));
         }
-      });
+      }
     }
 
     res.status(200).json({ message: 'Edit request rejected' });
@@ -318,8 +368,14 @@ router.delete('/:id', authenticate, authorize(['owner', 'admin']), async (req: A
     }
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (stock.factory?.companyId !== dbUser?.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
+      if (!stock.factory?.companyId || !companyIds.includes(stock.factory.companyId)) {
         res.status(403).json({ message: 'Unauthorized: Cannot delete this stock' });
         return;
       }
@@ -347,11 +403,15 @@ router.post('/delete-batch', authenticate, authorize(['owner', 'admin']), async 
       return;
     }
 
-    let companyId: string | null | undefined = null;
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      companyId = dbUser?.companyId;
-      if (!companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
+      if (companyIds.length === 0) {
         res.status(403).json({ message: 'Unauthorized' });
         return;
       }
@@ -361,7 +421,7 @@ router.post('/delete-batch', authenticate, authorize(['owner', 'admin']), async 
         where: { id: { in: ids } },
         include: { factory: true }
       });
-      const allOwned = stocks.every(s => s.factory?.companyId === companyId);
+      const allOwned = stocks.every(s => s.factory?.companyId && companyIds.includes(s.factory.companyId));
       if (!allOwned) {
         res.status(403).json({ message: 'Unauthorized: You do not own some of the selected items' });
         return;
@@ -385,12 +445,18 @@ router.get('/recycle-bin', authenticate, authorize(['owner', 'admin']), async (r
   try {
     let whereClause: any = { isDeleted: true };
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (!dbUser || !dbUser.companyId) {
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
+
+      if (companyIds.length === 0) {
         res.status(200).json([]);
         return;
       }
-      whereClause.factory = { companyId: dbUser.companyId };
+      whereClause.factory = { companyId: { in: companyIds } };
     }
 
     const deletedItems = await prisma.stock.findMany({
@@ -415,15 +481,19 @@ router.post('/recover-batch', authenticate, authorize(['owner', 'admin']), async
     }
 
     if (req.user?.role === 'owner') {
-      const dbUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      const companyId = dbUser?.companyId;
+      const dbUser = await prisma.user.findUnique({ 
+        where: { id: req.user.userId },
+        include: { ownedCompanies: true }
+      });
+      const companyIds = dbUser?.ownedCompanies.map(c => c.id) || [];
+      if (dbUser?.companyId) companyIds.push(dbUser.companyId);
 
       // Verify ownership
       const stocks = await prisma.stock.findMany({
         where: { id: { in: ids } },
         include: { factory: true }
       });
-      const allOwned = stocks.every(s => s.factory?.companyId === companyId);
+      const allOwned = stocks.every(s => s.factory?.companyId && companyIds.includes(s.factory.companyId));
       if (!allOwned) {
         res.status(403).json({ message: 'Unauthorized: You do not own some of the selected items' });
         return;
@@ -560,14 +630,32 @@ router.put('/:id', authenticate, authorize(['staff', 'owner']), async (req: Auth
       const invStr = updatedStock.inv || '';
       const markName = updatedStock.mark?.name || '';
       
-      await prisma.notification.create({
-        data: {
-          title: 'Stock Sold',
-          message: `items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate} on ${formattedDate}`,
-          role: 'staff',
-          metadata: { factoryId: updatedStock.factoryId }
+      const hasOtherInfo = updatedStock.broker || updatedStock.buyer || updatedStock.transporter;
+      
+      const title = hasOtherInfo ? 'Stock Sold' : 'Dispatch Advice Needed';
+      const message = hasOtherInfo
+        ? `items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate} on ${formattedDate}`
+        : `Make dispatch advice for items ${invStr}${invNoStr} ${markName} sold @ ${updatedStock.soldRate}`;
+      
+      if (updatedStock.factoryId) {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: 'staff', factories: { some: { id: updatedStock.factoryId } } }
+        });
+        
+        if (staffUsers.length > 0) {
+          await Promise.all(staffUsers.map(user => 
+            prisma.notification.create({
+              data: {
+                title,
+                message,
+                role: 'staff',
+                userId: user.id,
+                metadata: { factoryId: updatedStock.factoryId }
+              }
+            })
+          ));
         }
-      });
+      }
     }
 
     // Return success

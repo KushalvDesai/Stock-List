@@ -363,7 +363,7 @@ export function ExcelGrid({
                     className={`transition-colors group ${isRowSelected ? 'bg-indigo-50/40' : 'bg-white'}`}
                   >
                     <td 
-                      className={`border-r border-b border-gray-300 px-1 py-1 text-center text-xs font-normal cursor-pointer transition-colors ${isRowSelected ? 'bg-indigo-200 text-indigo-800 border-indigo-300' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      className={`border-r border-b border-gray-300 px-1 py-1 text-center text-xs font-normal cursor-pointer transition-colors ${isRowSelected ? 'bg-indigo-200 text-indigo-800 border-indigo-300' : 'bg-gray-100 text-slate-800 hover:bg-gray-200'}`}
                       onClick={(e) => toggleFullRow(index, e.shiftKey)}
                       title="Click to select row (Shift+Click for multiple)"
                     >
@@ -415,7 +415,7 @@ export function ExcelGrid({
                       </button>
                       <button
                         onClick={() => handleRemoveRow(row.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        className="p-1 text-slate-700 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         title="Remove Row"
                       >
                         <Trash2 size={14} />

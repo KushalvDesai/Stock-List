@@ -88,7 +88,7 @@ export default function MobileInventoryPage() {
       {/* Sticky Header & Search */}
       <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-4 py-3 space-y-3 shadow-sm">
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700" />
           <input
             type="text"
             placeholder="Search marks, factories..."
@@ -104,7 +104,7 @@ export default function MobileInventoryPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-all ${
-                activeTab === tab ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                activeTab === tab ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-800 hover:text-gray-700'
               }`}
             >
               {tab}
@@ -128,7 +128,7 @@ export default function MobileInventoryPage() {
         ) : filteredStock.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center space-y-3">
             <Package size={48} className="text-gray-300" />
-            <p className="text-gray-500 font-medium">No inventory found</p>
+            <p className="text-slate-800 font-medium">No inventory found</p>
           </div>
         ) : (
           <AnimatePresence>
@@ -142,7 +142,7 @@ export default function MobileInventoryPage() {
                 <div className="flex justify-between items-start mb-1.5">
                   <div>
                     <h3 className="font-bold text-gray-900 text-base leading-tight">{item.mark?.name || "Unknown Mark"}</h3>
-                    <p className="text-[11px] text-gray-500">{item.factory?.name || "Unknown Factory"}</p>
+                    <p className="text-[11px] text-slate-800">{item.factory?.name || "Unknown Factory"}</p>
                   </div>
                   <div className="flex flex-col items-end">
                     {item.soldRate !== null ? (

@@ -60,7 +60,9 @@ model User {
   role      Role      @default(staff)
   companyId String?
   company   Company?  @relation(fields: [companyId], references: [id])
+  ownedCompanies Company[] @relation("CompanyOwner")
   factories Factory[] @relation("UserFactories")
+  notifications Notification[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -68,6 +70,8 @@ model User {
 model Company {
   id        String    @id @default(uuid())
   name      String    @unique
+  ownerId   String?
+  owner     User?     @relation("CompanyOwner", fields: [ownerId], references: [id])
   factories Factory[]
   users     User[]
 }
@@ -189,6 +193,8 @@ model Notification {
   title     String
   message   String
   role      Role     // To determine which roles see the notification
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   metadata  Json?    // For storing custom payload (like ip, expiresAt)
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())

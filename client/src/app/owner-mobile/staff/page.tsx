@@ -137,7 +137,7 @@ export default function MobileCompanyManagementPage() {
           <button
             onClick={() => setActiveTab('staff')}
             className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-              activeTab === 'staff' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'
+              activeTab === 'staff' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-800'
             }`}
           >
             Staff Accounts
@@ -145,7 +145,7 @@ export default function MobileCompanyManagementPage() {
           <button
             onClick={() => setActiveTab('hierarchy')}
             className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-              activeTab === 'hierarchy' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'
+              activeTab === 'hierarchy' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-800'
             }`}
           >
             Company Hierarchy
@@ -192,7 +192,7 @@ export default function MobileCompanyManagementPage() {
             {/* Staff List */}
             <div className="space-y-3">
               <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider ml-1">Existing Staff</h3>
-              {staff.length === 0 && <p className="text-sm text-gray-500 ml-1">No staff created yet.</p>}
+              {staff.length === 0 && <p className="text-sm text-slate-800 ml-1">No staff created yet.</p>}
               
               {staff.map(user => (
                 <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
@@ -310,7 +310,7 @@ export default function MobileCompanyManagementPage() {
                     {company.factories.map((factory: any) => (
                       <div key={factory.id}>
                         <h5 className="font-bold text-gray-700 flex items-center gap-2 mb-2 text-sm">
-                          <Factory size={14} className="text-gray-400" /> {factory.name}
+                          <Factory size={14} className="text-slate-700" /> {factory.name}
                         </h5>
                         <div className="flex flex-wrap gap-1.5 pl-5">
                           {factory.marks.map((mark: any) => (
